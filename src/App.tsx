@@ -342,7 +342,7 @@ function App() {
 
   return (
     <div className={darkMode ? "app dark" : "app"}>
-      <h1>💰 Expense Tracker App</h1>
+    <Header darkMode={darkMode} setDarkMode={setDarkMode} />
 
     
 
