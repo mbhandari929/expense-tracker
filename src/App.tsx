@@ -33,8 +33,7 @@ const fixOldData = (items: any[], type: "income" | "expense"): Item[] => {
 function App() {
   const [incomeText, setIncomeText] = useState("");
   const [incomeAmount, setIncomeAmount] = useState("");
- 
-  const [expenseText, setExpenseText] = useState("");
+  const[expenseText, setExpenseText] = useState("");
   const [expenseAmount, setExpenseAmount] = useState("");
 
   const [newIncomeSource, setNewIncomeSource] = useState("");
@@ -342,9 +341,9 @@ function App() {
 
   return (
     <div className={darkMode ? "app dark" : "app"}>
-    <Header darkMode={darkMode} setDarkMode={setDarkMode} />
+      <Header darkMode={darkMode} setDarkMode={setDarkMode} />
 
-    
+
 
       <div className="top-controls">
         <input
