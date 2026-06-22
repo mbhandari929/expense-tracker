@@ -33,7 +33,7 @@ const fixOldData = (items: any[], type: "income" | "expense"): Item[] => {
 function App() {
   const [incomeText, setIncomeText] = useState("");
   const [incomeAmount, setIncomeAmount] = useState("");
-
+ 
   const [expenseText, setExpenseText] = useState("");
   const [expenseAmount, setExpenseAmount] = useState("");
 
