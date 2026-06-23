@@ -1,19 +1,23 @@
-function IncomeForm() {
+type Props = {
+  newIncomeSource: string;
+  setNewIncomeSource: React.Dispatch<React.SetStateAction<string>>;
+  addIncomeSource: () => void;
+};
+
+function IncomeForm({
+  newIncomeSource,
+  setNewIncomeSource,
+  addIncomeSource,
+}: Props) {
   return (
-    <div>
-      <h2>Income Form</h2>
-
+    <div className="source-box">
+      <h2>Income Source</h2>
       <input
-        type="text"
-        placeholder="Income Source"
+        value={newIncomeSource}
+        onChange={(e) => setNewIncomeSource(e.target.value)}
+        placeholder="Add income source"
       />
-
-      <input
-        type="number"
-        placeholder="Amount"
-      />
-
-      <button>Add Income</button>
+      <button onClick={addIncomeSource}>Add Source</button>
     </div>
   );
 }

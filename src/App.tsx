@@ -10,6 +10,7 @@ import {
 } from "recharts";
 import "./App.css";
 import Header from "./components/Header";
+import IncomeForm from "./components/IncomeForm";
 type Item = {
   id: string;
   text: string;
@@ -412,16 +413,11 @@ function App() {
       </div>
 
       <div className="source-area">
-        <div className="source-box">
-          <h2>Income Source</h2>
-          <input
-            value={newIncomeSource}
-            onChange={(e) => setNewIncomeSource(e.target.value)}
-            placeholder="Add income source"
-          />
-          <button onClick={addIncomeSource}>Add Source</button>
-        </div>
-
+      <IncomeForm
+  newIncomeSource={newIncomeSource}
+  setNewIncomeSource={setNewIncomeSource}
+  addIncomeSource={addIncomeSource} 
+      />
         <div className="source-box">
           <h2>Expense Source</h2>
           <input
