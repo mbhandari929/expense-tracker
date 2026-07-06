@@ -1,4 +1,4 @@
-﻿type IncomeFormProps = {
+type IncomeBoxProps = {
   newIncomeSource: string;
   setNewIncomeSource: (value: string) => void;
   addIncomeSource: () => void;
@@ -9,11 +9,9 @@
   incomeSources: string[];
   addIncome: () => void;
   editIncomeId: string | null;
-  deleteIncomeSource: (source: string) => void;
-  editIncomeSource: (source: string) => void;
 };
 
-function IncomeForm({
+function IncomeBox({
   newIncomeSource,
   setNewIncomeSource,
   addIncomeSource,
@@ -24,9 +22,9 @@ function IncomeForm({
   incomeSources,
   addIncome,
   editIncomeId,
-}: IncomeFormProps) {
+}: IncomeBoxProps) {
   return (
-    <div className="source-box income-form compact-card">
+    <div className="source-box compact-card">
       <h2>Income</h2>
 
       <div className="inline-row">
@@ -42,7 +40,10 @@ function IncomeForm({
       </div>
 
       <div className="inline-row money-row">
-        <select value={incomeText} onChange={(e) => setIncomeText(e.target.value)}>
+        <select
+          value={incomeText}
+          onChange={(e) => setIncomeText(e.target.value)}
+        >
           <option value="">Select income source</option>
           {incomeSources.map((source) => (
             <option key={source} value={source}>
@@ -66,4 +67,4 @@ function IncomeForm({
   );
 }
 
-export default IncomeForm;
+export default IncomeBox;
