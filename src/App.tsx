@@ -34,7 +34,7 @@ const fixOldData = (items: any[], type: "income" | "expense"): Item[] => {
 function App() {
   const [incomeText, setIncomeText] = useState("");
   const [incomeAmount, setIncomeAmount] = useState("");
-  const[expenseText, setExpenseText] = useState("");
+  const [expenseText, setExpenseText] = useState("");
   const [expenseAmount, setExpenseAmount] = useState("");
 
   const [newIncomeSource, setNewIncomeSource] = useState("");
@@ -175,7 +175,20 @@ function App() {
     }
     setNewIncomeSource("");
   };
+const deleteIncomeSource = (source: string) => {
+  setIncomeSources(incomeSources.filter((item) => item !== source));
+};
+const editIncomeSource = (oldSource: string) => {
+  const newSource = prompt("Edit Income Source", oldSource);
 
+  if (!newSource || newSource.trim() === "") return;
+
+  setIncomeSources(
+    incomeSources.map((item) =>
+      item === oldSource ? newSource.trim() : item
+    )
+  );
+};
   const addExpenseSource = () => {
     const source = newExpenseSource.trim();
     if (source === "") return;
@@ -413,11 +426,19 @@ function App() {
       </div>
 
       <div className="source-area">
-      <IncomeForm
-  newIncomeSource={newIncomeSource}
-  setNewIncomeSource={setNewIncomeSource}
-  addIncomeSource={addIncomeSource} 
-      />
+        <IncomeForm
+          newIncomeSource={newIncomeSource}
+          setNewIncomeSource={setNewIncomeSource}
+          addIncomeSource={addIncomeSource}
+          incomeText={incomeText}
+          setIncomeText={setIncomeText} 
+          incomeAmount={incomeAmount}
+          setIncomeAmount={setIncomeAmount}
+          incomeSources={incomeSources}
+          addIncome={addIncome}
+          editIncomeId={editIncomeId}
+          deleteIncomeSource={deleteIncomeSource}
+        />
         <div className="source-box">
           <h2>Expense Source</h2>
           <input
@@ -430,32 +451,7 @@ function App() {
       </div>
 
       <div className="form-area">
-        <div className="form-box income-form">
-          <h2>{editIncomeId ? "Edit Income" : "Add Income"}</h2>
-
-          <select
-            value={incomeText}
-            onChange={(e) => setIncomeText(e.target.value)}
-          >
-            <option value="">Select income source</option>
-            {incomeSources.map((source) => (
-              <option key={source} value={source}>
-                {source}
-              </option>
-            ))}
-          </select>
-
-          <input
-            type="number"
-            value={incomeAmount}
-            onChange={(e) => setIncomeAmount(e.target.value)}
-            placeholder="Income amount"
-          />
-
-          <button onClick={addIncome}>
-            {editIncomeId ? "Update Income" : "Add Income"}
-          </button>
-        </div>
+      
 
         <div className="form-box expense-form">
           <h2>{editExpenseId ? "Edit Expense" : "Add Expense"}</h2>
