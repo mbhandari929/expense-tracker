@@ -1,4 +1,4 @@
-type ExpenseBoxProps = {
+type ExpenseFormProps = {
   newExpenseSource: string;
   setNewExpenseSource: (value: string) => void;
   addExpenseSource: () => void;
@@ -11,7 +11,7 @@ type ExpenseBoxProps = {
   editExpenseId: string | null;
 };
 
-function ExpenseBox({
+function ExpenseForm({
   newExpenseSource,
   setNewExpenseSource,
   addExpenseSource,
@@ -22,9 +22,9 @@ function ExpenseBox({
   expenseSources,
   addExpense,
   editExpenseId,
-}: ExpenseBoxProps) {
+}: ExpenseFormProps) {
   return (
-    <div className="source-box compact-card">
+    <div className="source-box expense-form compact-card">
       <h2>Expense</h2>
 
       <div className="inline-row">
@@ -67,4 +67,4 @@ function ExpenseBox({
   );
 }
 
-export default ExpenseBox;
+export default ExpenseForm;

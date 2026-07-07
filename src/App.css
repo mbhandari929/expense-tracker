@@ -206,12 +206,7 @@ select {
   border-radius: 12px;
 }
 
-.source-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin: 12px 0 24px;
-}
+
 
 .source-item {
   display: flex;

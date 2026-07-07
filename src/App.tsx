@@ -1,4 +1,4 @@
-
+import ExpenseForm from "./components/ExpenseForm";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   PieChart,
@@ -11,6 +11,7 @@ import {
 import "./App.css";
 import Header from "./components/Header";
 import IncomeForm from "./components/IncomeForm";
+
 type Item = {
   id: string;
   text: string;
@@ -426,46 +427,19 @@ function App() {
           editIncomeId={editIncomeId}
         />
 
-        <div className="source-box expense-form compact-card">
-          <h2>Expense</h2>
-
-          <div className="inline-row">
-            <input
-              value={newExpenseSource}
-              onChange={(e) => setNewExpenseSource(e.target.value)}
-              placeholder="Add expense source"
-            />
-
-            <button className="small-btn" onClick={addExpenseSource}>
-              Add Source
-            </button>
-          </div>
-
-          <div className="inline-row money-row">
-            <select
-              value={expenseText}
-              onChange={(e) => setExpenseText(e.target.value)}
-            >
-              <option value="">Select expense source</option>
-              {expenseSources.map((source) => (
-                <option key={source} value={source}>
-                  {source}
-                </option>
-              ))}
-            </select>
-
-            <input
-              type="number"
-              value={expenseAmount}
-              onChange={(e) => setExpenseAmount(e.target.value)}
-              placeholder="Expense amount"
-            />
-          </div>
-
-          <button className="main-action-btn" onClick={addExpense}>
-            {editExpenseId ? "Update Expense" : "Add Expense"}
-          </button>
-        </div>
+        <ExpenseForm
+          newExpenseSource={newExpenseSource}
+          setNewExpenseSource={setNewExpenseSource}
+          addExpenseSource={addExpenseSource}
+          expenseText={expenseText}
+          setExpenseText={setExpenseText}
+          expenseAmount={expenseAmount}
+          setExpenseAmount={setExpenseAmount}
+          expenseSources={expenseSources}
+          addExpense={addExpense}
+          editExpenseId={editExpenseId}
+         />
+        
       </div>
       <div className="report-area">
         <div className="report-card">
@@ -585,7 +559,7 @@ function App() {
           ))}
         </div>
 
-        <div className="history-box">
+        <div className="history-box"> 
           <h2>Expense History</h2>
 
           {filteredExpenses.map((item) => (
