@@ -8,9 +8,7 @@
   setIncomeAmount: (value: string) => void;
   incomeSources: string[];
   addIncome: () => void;
-  editIncomeId: string | null;
-  deleteIncomeSource: (source: string) => void;
-  editIncomeSource: (source: string) => void;
+  editIncomeId: string | null; 
 };
 
 function IncomeForm({
