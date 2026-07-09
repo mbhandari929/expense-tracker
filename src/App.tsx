@@ -1,4 +1,7 @@
+import IncomeForm from "./components/IncomeForm";
 import ExpenseForm from "./components/ExpenseForm";
+import SummaryCard from "./components/SummaryCard";
+import Header from "./components/Header";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   PieChart,
@@ -9,8 +12,9 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import "./App.css";
-import Header from "./components/Header";
-import IncomeForm from "./components/IncomeForm";
+
+
+
 
 type Item = {
   id: string;
@@ -376,26 +380,11 @@ function App() {
         />
       </div>
 
-      <div className="summary-area">
-        <div className="summary-card">
-          <h3>Opening Balance</h3>
-          <p>¥{openingBalance}</p>
-        </div>
-
-        <div className="summary-card income">
-          <h3>Total Income</h3>
-          <p>¥{totalIncome}</p>
-        </div>
-
-        <div className="summary-card expense">
-          <h3>Total Expense</h3>
-          <p>¥{totalExpense}</p>
-        </div>
-
-        <div className="summary-card balance">
-          <h3>Balance</h3>
-          <p>¥{balance}</p>
-        </div>
+     <div className="summary-area">
+        <SummaryCard title="Opening Balance" amount={openingBalance} />
+        <SummaryCard title="Total Income" amount={totalIncome} className="income" />
+        <SummaryCard title="Total Expense" amount={totalExpense} className="expense" />
+        <SummaryCard title="Balance" amount={balance} className="balance" />
       </div>
 
       <div className="backup-buttons">
