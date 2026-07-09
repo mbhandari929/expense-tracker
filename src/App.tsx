@@ -1,5 +1,5 @@
-
-import { useEffect, useMemo, useRef, useState } from "react";
+import ExpenseForm from "./components/ExpenseForm";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import {
   PieChart,
   Pie,
@@ -11,6 +11,7 @@ import {
 import "./App.css";
 import Header from "./components/Header";
 import IncomeForm from "./components/IncomeForm";
+
 type Item = {
   id: string;
   text: string;
@@ -34,7 +35,7 @@ const fixOldData = (items: any[], type: "income" | "expense"): Item[] => {
 function App() {
   const [incomeText, setIncomeText] = useState("");
   const [incomeAmount, setIncomeAmount] = useState("");
-  const[expenseText, setExpenseText] = useState("");
+  const [expenseText, setExpenseText] = useState("");
   const [expenseAmount, setExpenseAmount] = useState("");
 
   const [newIncomeSource, setNewIncomeSource] = useState("");
@@ -160,7 +161,11 @@ function App() {
 
     return report;
   }, {} as Record<string, { income: number; expense: number }>);
-
+    const monthlyReportEntries = Object.keys(monthlyReport).map((month) => ({
+  month,
+  income: monthlyReport[month].income,
+  expense: monthlyReport[month].expense,
+  }));
   const recentItems = [...allItems]
     .sort((a, b) => b.date.localeCompare(a.date))
     .slice(0, 5);
@@ -184,6 +189,7 @@ function App() {
     }
     setNewExpenseSource("");
   };
+
 
   const addIncome = () => {
     if (incomeText === "" || incomeAmount === "") return;
@@ -315,7 +321,7 @@ function App() {
     URL.revokeObjectURL(url);
   };
 
-  const importJSON = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const importJSON = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -411,80 +417,34 @@ function App() {
           style={{ display: "none" }}
         />
       </div>
+      <div className="source-area compact-area">
+        <IncomeForm
+          newIncomeSource={newIncomeSource}
+          setNewIncomeSource={setNewIncomeSource}
+          addIncomeSource={addIncomeSource}
+          incomeText={incomeText}
+          setIncomeText={setIncomeText}
+          incomeAmount={incomeAmount}
+          setIncomeAmount={setIncomeAmount}
+          incomeSources={incomeSources}
+          addIncome={addIncome}
+          editIncomeId={editIncomeId}
+        />
 
-      <div className="source-area">
-      <IncomeForm
-  newIncomeSource={newIncomeSource}
-  setNewIncomeSource={setNewIncomeSource}
-  addIncomeSource={addIncomeSource} 
-      />
-        <div className="source-box">
-          <h2>Expense Source</h2>
-          <input
-            value={newExpenseSource}
-            onChange={(e) => setNewExpenseSource(e.target.value)}
-            placeholder="Add expense source"
-          />
-          <button onClick={addExpenseSource}>Add Source</button>
-        </div>
+        <ExpenseForm
+          newExpenseSource={newExpenseSource}
+          setNewExpenseSource={setNewExpenseSource}
+          addExpenseSource={addExpenseSource}
+          expenseText={expenseText}
+          setExpenseText={setExpenseText}
+          expenseAmount={expenseAmount}
+          setExpenseAmount={setExpenseAmount}
+          expenseSources={expenseSources}
+          addExpense={addExpense}
+          editExpenseId={editExpenseId}
+         />
+        
       </div>
-
-      <div className="form-area">
-        <div className="form-box income-form">
-          <h2>{editIncomeId ? "Edit Income" : "Add Income"}</h2>
-
-          <select
-            value={incomeText}
-            onChange={(e) => setIncomeText(e.target.value)}
-          >
-            <option value="">Select income source</option>
-            {incomeSources.map((source) => (
-              <option key={source} value={source}>
-                {source}
-              </option>
-            ))}
-          </select>
-
-          <input
-            type="number"
-            value={incomeAmount}
-            onChange={(e) => setIncomeAmount(e.target.value)}
-            placeholder="Income amount"
-          />
-
-          <button onClick={addIncome}>
-            {editIncomeId ? "Update Income" : "Add Income"}
-          </button>
-        </div>
-
-        <div className="form-box expense-form">
-          <h2>{editExpenseId ? "Edit Expense" : "Add Expense"}</h2>
-
-          <select
-            value={expenseText}
-            onChange={(e) => setExpenseText(e.target.value)}
-          >
-            <option value="">Select expense source</option>
-            {expenseSources.map((source) => (
-              <option key={source} value={source}>
-                {source}
-              </option>
-            ))}
-          </select>
-
-          <input
-            type="number"
-            value={expenseAmount}
-            onChange={(e) => setExpenseAmount(e.target.value)}
-            placeholder="Expense amount"
-          />
-
-          <button onClick={addExpense}>
-            {editExpenseId ? "Update Expense" : "Add Expense"}
-          </button>
-        </div>
-      </div>
-
       <div className="report-area">
         <div className="report-card">
           <h2>Income Report</h2>
@@ -558,16 +518,16 @@ function App() {
       <div className="report-card">
         <h2>📅 Monthly Report</h2>
 
-        {Object.entries(monthlyReport).map(([month, data]) => (
-          <div key={month} className="report-row">
-            <span>{month}</span>
+        {monthlyReportEntries.map((data) => (
+          <div key={data.month} className="report-row">
+            <span>{data.month}</span>
             <span>Income: ¥{data.income}</span>
             <span>Expense: ¥{data.expense}</span>
             <span>Balance: ¥{data.income - data.expense}</span>
           </div>
         ))}
       </div>
-
+              
       <div className="report-card">
         <h2>Recent 5 Transactions</h2>
 
@@ -597,13 +557,13 @@ function App() {
 
               <div className="action-buttons">
                 <button onClick={() => editIncome(item.id)}>✏️</button>
-                <button onClick={() => deleteIncome(item.id)}>×</button>
+                <button onClick={() => deleteIncome(item.id)}>×</button>  
               </div>
             </div>
           ))}
         </div>
 
-        <div className="history-box">
+        <div className="history-box"> 
           <h2>Expense History</h2>
 
           {filteredExpenses.map((item) => (
@@ -629,3 +589,4 @@ function App() {
 }
 
 export default App;
+
