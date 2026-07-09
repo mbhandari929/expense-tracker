@@ -1,5 +1,5 @@
 import ExpenseForm from "./components/ExpenseForm";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import {
   PieChart,
   Pie,
@@ -161,7 +161,11 @@ function App() {
 
     return report;
   }, {} as Record<string, { income: number; expense: number }>);
-
+    const monthlyReportEntries = Object.keys(monthlyReport).map((month) => ({
+  month,
+  income: monthlyReport[month].income,
+  expense: monthlyReport[month].expense,
+  }));
   const recentItems = [...allItems]
     .sort((a, b) => b.date.localeCompare(a.date))
     .slice(0, 5);
@@ -317,7 +321,7 @@ function App() {
     URL.revokeObjectURL(url);
   };
 
-  const importJSON = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const importJSON = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -514,16 +518,16 @@ function App() {
       <div className="report-card">
         <h2>📅 Monthly Report</h2>
 
-        {Object.entries(monthlyReport).map(([month, data]) => (
-          <div key={month} className="report-row">
-            <span>{month}</span>
+        {monthlyReportEntries.map((data) => (
+          <div key={data.month} className="report-row">
+            <span>{data.month}</span>
             <span>Income: ¥{data.income}</span>
             <span>Expense: ¥{data.expense}</span>
             <span>Balance: ¥{data.income - data.expense}</span>
           </div>
         ))}
       </div>
-
+              
       <div className="report-card">
         <h2>Recent 5 Transactions</h2>
 

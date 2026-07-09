@@ -1,4 +1,4 @@
-﻿type IncomeFormProps = {
+type IncomeFormProps = {
   newIncomeSource: string;
   setNewIncomeSource: (value: string) => void;
   addIncomeSource: () => void;
