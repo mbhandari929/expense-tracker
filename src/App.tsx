@@ -1,8 +1,7 @@
-import IncomeForm from "./components/IncomeForm";
-import ExpenseForm from "./components/ExpenseForm";
-import SummaryCard from "./components/SummaryCard";
 import Header from "./components/Header";
+import SummaryCard from "./components/SummaryCard";
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { ChangeEvent } from "react";
 import {
   PieChart,
   Pie,
@@ -13,20 +12,19 @@ import {
 } from "recharts";
 import "./App.css";
 
-
-
+type TransactionType = "income" | "expense";
 
 type Item = {
   id: string;
   text: string;
   amount: number;
   date: string;
-  type: "income" | "expense";
+  type: TransactionType;
 };
 
 const createId = () => crypto.randomUUID();
 
-const fixOldData = (items: any[], type: "income" | "expense"): Item[] => {
+const fixOldData = (items: any[], type: TransactionType): Item[] => {
   return items.map((item) => ({
     id: item.id || createId(),
     text: item.text,
@@ -37,20 +35,16 @@ const fixOldData = (items: any[], type: "income" | "expense"): Item[] => {
 };
 
 function App() {
-  const [incomeText, setIncomeText] = useState("");
-  const [incomeAmount, setIncomeAmount] = useState("");
-  const [expenseText, setExpenseText] = useState("");
-  const [expenseAmount, setExpenseAmount] = useState("");
-
-  const [newIncomeSource, setNewIncomeSource] = useState("");
-  const [newExpenseSource, setNewExpenseSource] = useState("");
+  const [transactionType, setTransactionType] =
+    useState<TransactionType>("income");
+  const [transactionText, setTransactionText] = useState("");
+  const [transactionAmount, setTransactionAmount] = useState("");
+  const [newSource, setNewSource] = useState("");
+  const [editId, setEditId] = useState<string | null>(null);
 
   const [searchText, setSearchText] = useState("");
   const [selectedMonth, setSelectedMonth] = useState("all");
   const [darkMode, setDarkMode] = useState(false);
-
-  const [editIncomeId, setEditIncomeId] = useState<string | null>(null);
-  const [editExpenseId, setEditExpenseId] = useState<string | null>(null);
 
   const importInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -65,7 +59,9 @@ function App() {
 
   const [expenseSources, setExpenseSources] = useState<string[]>(() => {
     const saved = localStorage.getItem("expenseSources");
-    return saved ? JSON.parse(saved) : ["Food", "Rent", "Transport", "Other"];
+    return saved
+      ? JSON.parse(saved)
+      : ["Food", "Rent", "Transport", "Other"];
   });
 
   const [incomes, setIncomes] = useState<Item[]>(() => {
@@ -98,21 +94,36 @@ function App() {
     localStorage.setItem("openingBalance", String(openingBalance));
   }, [openingBalance]);
 
-  const allItems = [...incomes, ...expenses];
+  const allItems = useMemo(
+    () => [...incomes, ...expenses],
+    [incomes, expenses]
+  );
+
+  const availableSources =
+    transactionType === "income" ? incomeSources : expenseSources;
+
+  const sourceOptions =
+    transactionText && !availableSources.includes(transactionText)
+      ? [transactionText, ...availableSources]
+      : availableSources;
 
   const months = useMemo(() => {
     const monthList = allItems.map((item) => item.date.slice(0, 7));
     return Array.from(new Set(monthList)).sort().reverse();
   }, [allItems]);
 
-  const monthFilteredItems =
-    selectedMonth === "all"
-      ? allItems
-      : allItems.filter((item) => item.date.slice(0, 7) === selectedMonth);
+  const monthFilteredItems = useMemo(() => {
+    if (selectedMonth === "all") return allItems;
+
+    return allItems.filter(
+      (item) => item.date.slice(0, 7) === selectedMonth
+    );
+  }, [allItems, selectedMonth]);
 
   const monthFilteredIncomes = monthFilteredItems.filter(
     (item) => item.type === "income"
   );
+
   const monthFilteredExpenses = monthFilteredItems.filter(
     (item) => item.type === "expense"
   );
@@ -121,6 +132,7 @@ function App() {
     (sum, item) => sum + item.amount,
     0
   );
+
   const totalExpense = monthFilteredExpenses.reduce(
     (sum, item) => sum + item.amount,
     0
@@ -128,26 +140,32 @@ function App() {
 
   const balance = openingBalance + totalIncome - totalExpense;
 
-  const filteredIncomes = monthFilteredIncomes.filter((item) =>
-    item.text.toLowerCase().includes(searchText.toLowerCase())
-  );
+  const filteredTransactions = [...monthFilteredItems]
+    .filter((item) =>
+      item.text.toLowerCase().includes(searchText.toLowerCase())
+    )
+    .sort((a, b) => b.date.localeCompare(a.date));
 
-  const filteredExpenses = monthFilteredExpenses.filter((item) =>
-    item.text.toLowerCase().includes(searchText.toLowerCase())
-  );
+  const transactionReport = [
+    ...incomeSources.map((source) => ({
+      type: "income" as const,
+      source,
+      total: monthFilteredIncomes
+        .filter((item) => item.text === source)
+        .reduce((sum, item) => sum + item.amount, 0),
+    })),
+    ...expenseSources.map((source) => ({
+      type: "expense" as const,
+      source,
+      total: monthFilteredExpenses
+        .filter((item) => item.text === source)
+        .reduce((sum, item) => sum + item.amount, 0),
+    })),
+  ].filter((item) => item.total > 0);
 
-  const incomeReport = incomeSources.map((source) => ({
-    source,
-    total: monthFilteredIncomes
-      .filter((item) => item.text === source)
-      .reduce((sum, item) => sum + item.amount, 0),
-  }));
-
-  const expenseReport = expenseSources.map((source) => ({
-    source,
-    total: monthFilteredExpenses
-      .filter((item) => item.text === source)
-      .reduce((sum, item) => sum + item.amount, 0),
+  const chartData = transactionReport.map((item) => ({
+    name: `${item.type === "income" ? "Income" : "Expense"} - ${item.source}`,
+    total: item.total,
   }));
 
   const monthlyReport = allItems.reduce((report, item) => {
@@ -172,107 +190,106 @@ function App() {
 
   const COLORS = ["#00C49F", "#0088FE", "#FFBB28", "#FF8042", "#FF4560"];
 
-  const addIncomeSource = () => {
-    const source = newIncomeSource.trim();
-    if (source === "") return;
-    if (!incomeSources.includes(source)) {
-      setIncomeSources([...incomeSources, source]);
-    }
-    setNewIncomeSource("");
+  const resetForm = () => {
+    setTransactionText("");
+    setTransactionAmount("");
+    setNewSource("");
+    setEditId(null);
   };
 
-  const addExpenseSource = () => {
-    const source = newExpenseSource.trim();
+  const addSource = () => {
+    const source = newSource.trim();
+
     if (source === "") return;
-    if (!expenseSources.includes(source)) {
+
+    if (transactionType === "income") {
+      if (!incomeSources.includes(source)) {
+        setIncomeSources([...incomeSources, source]);
+      }
+    } else if (!expenseSources.includes(source)) {
       setExpenseSources([...expenseSources, source]);
     }
-    setNewExpenseSource("");
+
+    setTransactionText(source);
+    setNewSource("");
   };
 
+  const saveTransaction = () => {
+    const text = transactionText.trim();
+    const amount = Number(transactionAmount);
 
-  const addIncome = () => {
-    if (incomeText === "" || incomeAmount === "") return;
+    if (text === "" || transactionAmount === "" || amount <= 0) return;
 
-    if (editIncomeId) {
-      setIncomes(
-        incomes.map((item) =>
-          item.id === editIncomeId
-            ? { ...item, text: incomeText, amount: Number(incomeAmount) }
-            : item
-        )
-      );
-      setEditIncomeId(null);
+    if (editId) {
+      const originalItem = allItems.find((item) => item.id === editId);
+      if (!originalItem) return;
+
+      const updatedItem: Item = {
+        ...originalItem,
+        text,
+        amount,
+        type: transactionType,
+      };
+
+      setIncomes((currentIncomes) => {
+        const withoutEditedItem = currentIncomes.filter(
+          (item) => item.id !== editId
+        );
+
+        return transactionType === "income"
+          ? [...withoutEditedItem, updatedItem]
+          : withoutEditedItem;
+      });
+
+      setExpenses((currentExpenses) => {
+        const withoutEditedItem = currentExpenses.filter(
+          (item) => item.id !== editId
+        );
+
+        return transactionType === "expense"
+          ? [...withoutEditedItem, updatedItem]
+          : withoutEditedItem;
+      });
     } else {
-      setIncomes([
-        ...incomes,
-        {
-          id: createId(),
-          text: incomeText,
-          amount: Number(incomeAmount),
-          date: new Date().toISOString(),
-          type: "income",
-        },
-      ]);
+      const newItem: Item = {
+        id: createId(),
+        text,
+        amount,
+        date: new Date().toISOString(),
+        type: transactionType,
+      };
+
+      if (transactionType === "income") {
+        setIncomes((currentIncomes) => [...currentIncomes, newItem]);
+      } else {
+        setExpenses((currentExpenses) => [...currentExpenses, newItem]);
+      }
     }
 
-    setIncomeText("");
-    setIncomeAmount("");
+    resetForm();
   };
 
-  const addExpense = () => {
-    if (expenseText === "" || expenseAmount === "") return;
+  const editTransaction = (item: Item) => {
+    setTransactionType(item.type);
+    setTransactionText(item.text);
+    setTransactionAmount(String(item.amount));
+    setEditId(item.id);
+  };
 
-    if (editExpenseId) {
-      setExpenses(
-        expenses.map((item) =>
-          item.id === editExpenseId
-            ? { ...item, text: expenseText, amount: Number(expenseAmount) }
-            : item
-        )
+  const deleteTransaction = (item: Item) => {
+    if (item.type === "income") {
+      setIncomes((currentIncomes) =>
+        currentIncomes.filter((income) => income.id !== item.id)
       );
-      setEditExpenseId(null);
     } else {
-      setExpenses([
-        ...expenses,
-        {
-          id: createId(),
-          text: expenseText,
-          amount: Number(expenseAmount),
-          date: new Date().toISOString(),
-          type: "expense",
-        },
-      ]);
+      setExpenses((currentExpenses) =>
+        currentExpenses.filter((expense) => expense.id !== item.id)
+      );
     }
 
-    setExpenseText("");
-    setExpenseAmount("");
-  };
-
-  const editIncome = (id: string) => {
-    const item = incomes.find((income) => income.id === id);
-    if (!item) return;
-
-    setIncomeText(item.text);
-    setIncomeAmount(String(item.amount));
-    setEditIncomeId(id);
-  };
-
-  const editExpense = (id: string) => {
-    const item = expenses.find((expense) => expense.id === id);
-    if (!item) return;
-
-    setExpenseText(item.text);
-    setExpenseAmount(String(item.amount));
-    setEditExpenseId(id);
-  };
-
-  const deleteIncome = (id: string) => {
-    setIncomes(incomes.filter((item) => item.id !== id));
-  };
-
-  const deleteExpense = (id: string) => {
-    setExpenses(expenses.filter((item) => item.id !== id));
+    if (editId === item.id) {
+      resetForm();
+    }
   };
 
   const exportCSV = () => {
@@ -321,7 +338,7 @@ function App() {
     URL.revokeObjectURL(url);
   };
 
-  const importJSON = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const importJSON = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -350,19 +367,19 @@ function App() {
     <div className={darkMode ? "app dark" : "app"}>
       <Header darkMode={darkMode} setDarkMode={setDarkMode} />
 
-
-
       <div className="top-controls">
         <input
           type="number"
           value={openingBalance}
-          onChange={(e) => setOpeningBalance(Number(e.target.value))}
+          onChange={(event) =>
+            setOpeningBalance(Number(event.target.value))
+          }
           placeholder="Opening Balance"
         />
 
         <select
           value={selectedMonth}
-          onChange={(e) => setSelectedMonth(e.target.value)}
+          onChange={(event) => setSelectedMonth(event.target.value)}
         >
           <option value="all">All Months</option>
           {months.map((month) => (
@@ -376,14 +393,22 @@ function App() {
           type="text"
           placeholder="Search source..."
           value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
+          onChange={(event) => setSearchText(event.target.value)}
         />
       </div>
 
-     <div className="summary-area">
+      <div className="summary-area">
         <SummaryCard title="Opening Balance" amount={openingBalance} />
-        <SummaryCard title="Total Income" amount={totalIncome} className="income" />
-        <SummaryCard title="Total Expense" amount={totalExpense} className="expense" />
+        <SummaryCard
+          title="Total Income"
+          amount={totalIncome}
+          className="income"
+        />
+        <SummaryCard
+          title="Total Expense"
+          amount={totalExpense}
+          className="expense"
+        />
         <SummaryCard title="Balance" amount={balance} className="balance" />
       </div>
 
@@ -402,176 +427,216 @@ function App() {
           style={{ display: "none" }}
         />
       </div>
-      <div className="source-area compact-area">
-        <IncomeForm
-          newIncomeSource={newIncomeSource}
-          setNewIncomeSource={setNewIncomeSource}
-          addIncomeSource={addIncomeSource}
-          incomeText={incomeText}
-          setIncomeText={setIncomeText}
-          incomeAmount={incomeAmount}
-          setIncomeAmount={setIncomeAmount}
-          incomeSources={incomeSources}
-          addIncome={addIncome}
-          editIncomeId={editIncomeId}
-        />
 
-        <ExpenseForm
-          newExpenseSource={newExpenseSource}
-          setNewExpenseSource={setNewExpenseSource}
-          addExpenseSource={addExpenseSource}
-          expenseText={expenseText}
-          setExpenseText={setExpenseText}
-          expenseAmount={expenseAmount}
-          setExpenseAmount={setExpenseAmount}
-          expenseSources={expenseSources}
-          addExpense={addExpense}
-          editExpenseId={editExpenseId}
-         />
-        
+      <div className="source-area compact-area single-transaction-area">
+        <div className="transaction-form-card">
+          <h2>{editId ? "Edit Transaction" : "Add Transaction"}</h2>
+
+          <label>Transaction Type</label>
+          <select
+            value={transactionType}
+            onChange={(event) => {
+              setTransactionType(event.target.value as TransactionType);
+              setTransactionText("");
+            }}
+          >
+            <option value="income">Income</option>
+            <option value="expense">Expense</option>
+          </select>
+
+          <label>Add New Source</label>
+          <div className="source-input-row">
+            <input
+              type="text"
+              value={newSource}
+              onChange={(event) => setNewSource(event.target.value)}
+              placeholder={
+                transactionType === "income"
+                  ? "Add income source"
+                  : "Add expense source"
+              }
+            />
+            <button type="button" onClick={addSource}>
+              Add Source
+            </button>
+          </div>
+
+          <label>Source</label>
+          <select
+            value={transactionText}
+            onChange={(event) => setTransactionText(event.target.value)}
+          >
+            <option value="">Select source</option>
+            {sourceOptions.map((source) => (
+              <option key={source} value={source}>
+                {source}
+              </option>
+            ))}
+          </select>
+
+          <label>Amount</label>
+          <input
+            type="number"
+            min="0"
+            value={transactionAmount}
+            onChange={(event) => setTransactionAmount(event.target.value)}
+            placeholder="Amount"
+          />
+
+          <div className="transaction-form-actions">
+            <button type="button" onClick={saveTransaction}>
+              {editId ? "Update Transaction" : "Add Transaction"}
+            </button>
+
+            {editId && (
+              <button type="button" onClick={resetForm}>
+                Cancel
+              </button>
+            )}
+          </div>
+        </div>
       </div>
-      <div className="report-area">
+
+      <div className="report-area single-report-area">
         <div className="report-card">
-          <h2>Income Report</h2>
-          {incomeReport
-            .filter((item) => item.total > 0)
-            .map((item) => (
-              <div key={item.source} className="report-row">
+          <h2>Income & Expense Report</h2>
+
+          {transactionReport.length === 0 ? (
+            <p>No transaction report yet.</p>
+          ) : (
+            transactionReport.map((item) => (
+              <div
+                key={`${item.type}-${item.source}`}
+                className={`report-row ${item.type}-report-row`}
+              >
+                <span>{item.type === "income" ? "Income" : "Expense"}</span>
                 <span>{item.source}</span>
                 <span>¥{item.total}</span>
               </div>
-            ))}
-        </div>
-
-        <div className="report-card">
-          <h2>Expense Report</h2>
-          {expenseReport
-            .filter((item) => item.total > 0)
-            .map((item) => (
-              <div key={item.source} className="report-row">
-                <span>{item.source}</span>
-                <span>¥{item.total}</span>
-              </div>
-            ))}
+            ))
+          )}
         </div>
       </div>
 
-      <div className="chart-area">
+      <div className="chart-area single-chart-area">
         <div className="chart-box">
-          <h2>Income Pie Chart</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={incomeReport.filter((item) => item.total > 0)}
-                dataKey="total"
-                nameKey="source"
-                outerRadius={100}
-                label
-              >
-                {incomeReport.map((_, index) => (
-                  <Cell key={index} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
+          <h2>Income & Expense Pie Chart</h2>
 
-        <div className="chart-box">
-          <h2>Expense Pie Chart</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={expenseReport.filter((item) => item.total > 0)}
-                dataKey="total"
-                nameKey="source"
-                outerRadius={100}
-                label
-              >
-                {expenseReport.map((_, index) => (
-                  <Cell key={index} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
+          {chartData.length === 0 ? (
+            <p>No chart data yet.</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={350}>
+              <PieChart>
+                <Pie
+                  data={chartData}
+                  dataKey="total"
+                  nameKey="name"
+                  outerRadius={110}
+                  label
+                >
+                  {chartData.map((_, index) => (
+                    <Cell
+                      key={index}
+                      fill={COLORS[index % COLORS.length]}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </div>
 
       <div className="report-card">
         <h2>📅 Monthly Report</h2>
 
-        {Object.entries(monthlyReport).map(([month, data]) => (
-          <div key={month} className="report-row">
-            <span>{month}</span>
-            <span>Income: ¥{data.income}</span>
-            <span>Expense: ¥{data.expense}</span>
-            <span>Balance: ¥{data.income - data.expense}</span>
-          </div>
-        ))}
+        {Object.entries(monthlyReport)
+          .sort(([firstMonth], [secondMonth]) =>
+            secondMonth.localeCompare(firstMonth)
+          )
+          .map(([month, data]) => (
+            <div key={month} className="report-row">
+              <span>{month}</span>
+              <span>Income: ¥{data.income}</span>
+              <span>Expense: ¥{data.expense}</span>
+              <span>Balance: ¥{data.income - data.expense}</span>
+            </div>
+          ))}
       </div>
 
       <div className="report-card">
         <h2>Recent 5 Transactions</h2>
 
-        {recentItems.map((item) => (
-          <div key={item.id} className="report-row">
-            <span>{item.date.slice(0, 10)}</span>
-            <span>{item.text}</span>
-            <span>{item.type}</span>
-            <span>¥{item.amount}</span>
-          </div>
-        ))}
+        {recentItems.length === 0 ? (
+          <p>No recent transactions.</p>
+        ) : (
+          recentItems.map((item) => (
+            <div key={item.id} className="report-row">
+              <span>{item.date.slice(0, 10)}</span>
+              <span>{item.text}</span>
+              <span>{item.type}</span>
+              <span>¥{item.amount}</span>
+            </div>
+          ))
+        )}
       </div>
 
-      <div className="history-area">
+      <div className="history-area single-history-area">
         <div className="history-box">
-          <h2>Income History</h2>
+          <h2>Income & Expense Statement</h2>
 
-          {filteredIncomes.map((item) => (
-            <div key={item.id} className="history-item income-item">
-              <div>
-                <strong>{item.text}</strong>
-                <br />
-                <small>{item.date.slice(0, 10)}</small>
-              </div>
-
-              <span>¥{item.amount}</span>
-
-              <div className="action-buttons">
-                <button onClick={() => editIncome(item.id)}>✏️</button>
-                <button onClick={() => deleteIncome(item.id)}>×</button>  
-              </div>
+          <div className="statement-table">
+            <div className="statement-row statement-header">
+              <span>Date</span>
+              <span>Type</span>
+              <span>Source</span>
+              <span>Amount</span>
+              <span>Action</span>
             </div>
-          ))}
-        </div>
 
-        <div className="history-box"> 
-          <h2>Expense History</h2>
+            {filteredTransactions.length === 0 ? (
+              <p className="empty-message">No transactions found.</p>
+            ) : (
+              filteredTransactions.map((item) => (
+                <div
+                  key={item.id}
+                  className={`statement-row ${item.type === "income"
+                    ? "income-statement"
+                    : "expense-statement"
+                    }`}
+                >
+                  <span>{item.date.slice(0, 10)}</span>
 
-          {filteredExpenses.map((item) => (
-            <div key={item.id} className="history-item expense-item">
-              <div>
-                <strong>{item.text}</strong>
-                <br />
-                <small>{item.date.slice(0, 10)}</small>
-              </div>
+                  <span className={`type-badge ${item.type}`}>
+                    {item.type === "income" ? "Income" : "Expense"}
+                  </span>
 
-              <span>¥{item.amount}</span>
+                  <strong>{item.text}</strong>
 
-              <div className="action-buttons">
-                <button onClick={() => editExpense(item.id)}>✏️</button>
-                <button onClick={() => deleteExpense(item.id)}>×</button>
-              </div>
-            </div>
-          ))}
+                  <span
+                    className={
+                      item.type === "income"
+                        ? "income-amount"
+                        : "expense-amount"
+                    }
+                  >
+                    {item.type === "income" ? "+" : "-"}¥
+                    {item.amount.toLocaleString()}
+                  </span>
+
+                  <div className="action-buttons">
+                    <button onClick={() => editTransaction(item)}>✏️</button>
+                    <button onClick={() => deleteTransaction(item)}>×</button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </div>
     </div>
   );
 }
-
 export default App;
-

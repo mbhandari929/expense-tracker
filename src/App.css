@@ -1,316 +1,69 @@
-* {
+single-transaction-area,
+.single-report-area,
+.single-chart-area,
+.single-history-area {
+  grid-template-columns: 1fr;
+}
+
+.transaction-form-card {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px;
+  border-radius: 16px;
+  background: var(--card-bg, #ffffff);
   box-sizing: border-box;
 }
 
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: #f4f7fb;
-  color: #333;
+.transaction-form-card label {
+  display: block;
+  margin: 14px 0 6px;
+  font-weight: 600;
 }
 
-.app {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 25px;
-}
-
-h1 {
-  text-align: center;
-  color: #222;
-}
-
-button {
-  border: none;
-  padding: 12px 18px;
-  border-radius: 10px;
-  cursor: pointer;
-  font-weight: bold;
-  background: #4f46e5;
-  color: white;
-}
-
-button:hover {
-  opacity: 0.85;
-}
-
-input,
-select {
+.transaction-form-card input,
+.transaction-form-card select {
   width: 100%;
-  padding: 13px;
-  margin: 8px 0;
-  border: 1px solid #ddd;
-  border-radius: 10px;
-  font-size: 16px;
+  padding: 10px 12px;
+  box-sizing: border-box;
 }
 
-.dark-btn,
-.backup-buttons button {
-  width: 100%;
-  margin: 8px 0;
-}
-
-.top-controls,
-.summary-area,
-.source-area,
-.form-area,
-.report-area,
-.chart-area,
-.history-area {
-  display: grid;
-  gap: 18px;
-  margin: 25px 0;
-}
-
-.summary-area {
-  grid-template-columns: repeat(4, 1fr);
-}
-
-.source-area,
-.form-area,
-.report-area,
-.chart-area,
-.history-area {
-  grid-template-columns: repeat(2, 1fr);
-}
-
-.summary-card,
-.source-box,
-.form-box,
-.report-card,
-.chart-box,
-.history-box {
-  background: white;
-  padding: 22px;
-  border-radius: 18px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-}
-
-.summary-card {
-  text-align: center;
-}
-
-.summary-card p {
-  font-size: 24px;
-  font-weight: bold;
-}
-
-.income p {
-  color: #16a34a;
-}
-
-.expense p {
-  color: #dc2626;
-}
-
-.balance p {
-  color: #2563eb;
-}
-
-.report-row,
-.history-item {
+.source-input-row,
+.transaction-form-actions {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
   gap: 10px;
-  margin: 10px 0;
-  padding: 12px;
-  border-radius: 12px;
-  background: #f8fafc;
 }
 
-.action-buttons {
-  display: flex;
-  gap: 8px;
+.source-input-row input {
+  flex: 1;
 }
 
-.action-buttons button {
-  padding: 8px 10px;
-  background: #111827;
+.transaction-form-actions {
+  margin-top: 18px;
 }
 
-.backup-buttons {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 15px;
+.transaction-form-actions button {
+  flex: 1;
 }
 
-.dark {
-  background: #111827;
-  color: white;
+.single-report-area .report-card,
+.single-chart-area .chart-box,
+.single-history-area .history-box {
+  width: 100%;
 }
 
-.dark .summary-card,
-.dark .source-box,
-.dark .form-box,
-.dark .report-card,
-.dark .chart-box,
-.dark .history-box {
-  background: #1f2937;
-  color: white;
+.income-report-row {
+  border-left: 4px solid #00c49f;
 }
 
-.dark input,
-.dark select {
-  background: #374151;
-  color: white;
-  border: 1px solid #4b5563;
+.expense-report-row {
+  border-left: 4px solid #ff4560;
 }
 
-.dark .report-row {
-  background: #374151;
-}
-
-@media (max-width: 768px) {
-  .summary-area,
-  .source-area,
-  .form-area,
-  .report-area,
-  .chart-area,
-  .history-area,
-  .backup-buttons {
-    grid-template-columns: 1fr;
+@media (max-width: 640px) {
+  .source-input-row,
+  .transaction-form-actions {
+    flex-direction: column;
   }
 }
-/* Income / Expense 2 box clean design */
-.source-area {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 24px;
-  align-items: start;
-  margin: 30px 0;
-}
 
-.source-box {
-  padding: 28px;
-  border-radius: 22px;
-}
-
-.source-box h2 {
-  text-align: center;
-  font-size: 28px;
-  margin: 0 0 20px;
-}
-
-.source-box input,
-.source-box select {
-  height: 52px;
-  margin-bottom: 14px;
-}
-
-.source-box > button {
-  display: block;
-  width: 160px;
-  height: 46px;
-  margin: 0 auto 18px;
-  border-radius: 12px;
-}
-
-
-
-.source-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 14px;
-  background: #f8f9ff;
-  border: 1px solid #ececff;
-  border-radius: 14px;
-}
-
-.source-item span {
-  font-size: 18px;
-  font-weight: 500;
-}
-
-.source-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.source-actions button {
-  width: 42px;
-  height: 38px;
-  padding: 0;
-  border-radius: 10px;
-  background: #4f46e5;
-  color: white;
-}
-
-.income-form,
-.expense-form {
-  min-height: 560px;
-}
-
-.dark .source-item {
-  background: #374151;
-  border-color: #4b5563;
-}
-
-@media (max-width: 768px) {
-  .source-area {
-    grid-template-columns: 1fr;
-  }
-}
-/* Compact Income / Expense design */
-.compact-area {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 24px;
-  align-items: start;
-}
-
-.compact-card {
-  min-height: auto !important;
-}
-
-.compact-card h2 {
-  text-align: center;
-  font-size: 28px;
-  margin-bottom: 22px;
-}
-
-.inline-row {
-  display: grid;
-  grid-template-columns: 1fr 150px;
-  gap: 12px;
-  margin-bottom: 14px;
-  align-items: center;
-}
-
-.money-row {
-  grid-template-columns: 1.2fr 1fr;
-}
-
-.inline-row input,
-.inline-row select {
-  margin: 0;
-  height: 52px;
-}
-
-.small-btn {
-  height: 52px;
-  margin: 0;
-  padding: 0 16px;
-  border-radius: 12px;
-}
-
-.main-action-btn {
-  display: block;
-  width: 170px;
-  height: 48px;
-  margin: 18px auto 0;
-  border-radius: 12px;
-}
-
-@media (max-width: 768px) {
-  .compact-area {
-    grid-template-columns: 1fr;
-  }
-
-  .inline-row,
-  .money-row {
-    grid-template-columns: 1fr;
-  }
-}
