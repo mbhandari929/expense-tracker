@@ -1,44 +1,247 @@
-single-transaction-area,
-.single-report-area,
-.single-chart-area,
-.single-history-area {
-  grid-template-columns: 1fr;
+:root {
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  color: #1f2937;
+  background: #f3f6fb;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: #f3f6fb;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.app {
+  min-height: 100vh;
+  padding: 24px;
+  color: #1f2937;
+  background: #f3f6fb;
+}
+
+.app.dark {
+  color: #f8fafc;
+  background: #0f172a;
+}
+
+.app > * {
+  width: min(1180px, 100%);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Header */
+
+header,
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+  padding: 18px 22px;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+header h1,
+.header h1 {
+  margin: 0;
+  font-size: 30px;
+}
+
+header button,
+.header button {
+  border: 0;
+  border-radius: 12px;
+  padding: 10px 16px;
+  background: #111827;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.dark header,
+.dark .header {
+  background: #1e293b;
+  box-shadow: none;
+}
+
+/* Inputs */
+
+input,
+select {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #dbe3ef;
+  border-radius: 12px;
+  outline: none;
+  background: #ffffff;
+  color: #1f2937;
+}
+
+input:focus,
+select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+}
+
+.dark input,
+.dark select {
+  border-color: #475569;
+  background: #0f172a;
+  color: #f8fafc;
+}
+
+/* Buttons */
+
+button {
+  min-height: 42px;
+  border: 0;
+  border-radius: 12px;
+  padding: 10px 16px;
+  background: #2563eb;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+button:hover {
+  opacity: 0.9;
+}
+
+/* Top Controls */
+
+.top-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.4fr;
+  gap: 14px;
+  margin-bottom: 18px;
+  padding: 18px;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.07);
+}
+
+.dark .top-controls {
+  background: #1e293b;
+  box-shadow: none;
+}
+
+/* Summary Cards */
+
+.summary-area {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.summary-card {
+  min-height: 130px;
+  padding: 20px;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.07);
+}
+
+.summary-card h3 {
+  margin: 0 0 12px;
+  color: #64748b;
+  font-size: 15px;
+}
+
+.summary-card p {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 800;
+  word-break: break-word;
+}
+
+.summary-card.income {
+  border-top: 5px solid #16a34a;
+}
+
+.summary-card.expense {
+  border-top: 5px solid #dc2626;
+}
+
+.summary-card.balance {
+  border-top: 5px solid #2563eb;
+}
+
+.dark .summary-card {
+  background: #1e293b;
+  box-shadow: none;
+}
+
+/* Backup Buttons */
+
+.backup-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.backup-buttons button:nth-child(2) {
+  background: #7c3aed;
+}
+
+.backup-buttons button:nth-child(3) {
+  background: #0f766e;
+}
+
+/* Transaction Form */
+
+.source-area {
+  margin-bottom: 18px;
 }
 
 .transaction-form-card {
   width: 100%;
-  max-width: 720px;
-  margin: 0 auto;
   padding: 24px;
-  border-radius: 16px;
-  background: var(--card-bg, #ffffff);
-  box-sizing: border-box;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+.transaction-form-card h2 {
+  margin: 0 0 18px;
 }
 
 .transaction-form-card label {
   display: block;
-  margin: 14px 0 6px;
-  font-weight: 600;
+  margin: 14px 0 7px;
+  color: #475569;
+  font-weight: 700;
 }
 
-.transaction-form-card input,
-.transaction-form-card select {
-  width: 100%;
-  padding: 10px 12px;
-  box-sizing: border-box;
-}
-
-.source-input-row,
-.transaction-form-actions {
-  display: flex;
+.source-input-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
   gap: 10px;
 }
 
-.source-input-row input {
-  flex: 1;
-}
-
 .transaction-form-actions {
+  display: flex;
+  gap: 10px;
   margin-top: 18px;
 }
 
@@ -46,24 +249,236 @@ single-transaction-area,
   flex: 1;
 }
 
-.single-report-area .report-card,
-.single-chart-area .chart-box,
-.single-history-area .history-box {
+.dark .transaction-form-card {
+  background: #1e293b;
+  box-shadow: none;
+}
+
+.dark .transaction-form-card label {
+  color: #cbd5e1;
+}
+
+/* Report, Chart, History */
+
+.report-area,
+.chart-area,
+.history-area {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.report-card,
+.chart-box,
+.history-box {
   width: 100%;
+  padding: 22px;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.07);
+}
+
+.report-card {
+  margin-top: 18px;
+  margin-bottom: 18px;
+}
+
+.report-card h2,
+.chart-box h2,
+.history-box h2 {
+  margin: 0 0 16px;
+}
+
+.dark .report-card,
+.dark .chart-box,
+.dark .history-box {
+  background: #1e293b;
+  box-shadow: none;
+}
+
+/* Report Rows */
+
+.report-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+  align-items: center;
+  padding: 13px 14px;
+  margin-bottom: 9px;
+  border: 1px solid #e8edf5;
+  border-radius: 12px;
+  background: #f8fafc;
+  text-align: left;
+}
+
+.report-row span:last-child {
+  font-weight: 800;
 }
 
 .income-report-row {
-  border-left: 4px solid #00c49f;
+  border-left: 5px solid #16a34a;
 }
 
 .expense-report-row {
-  border-left: 4px solid #ff4560;
+  border-left: 5px solid #dc2626;
 }
 
-@media (max-width: 640px) {
-  .source-input-row,
-  .transaction-form-actions {
-    flex-direction: column;
+.dark .report-row {
+  border-color: #334155;
+  background: #0f172a;
+}
+
+/* Chart */
+
+.chart-box {
+  min-height: 420px;
+  overflow: hidden;
+}
+
+/* Statement Table */
+
+.statement-table {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.statement-row {
+  display: grid;
+  grid-template-columns:
+    minmax(110px, 0.9fr)
+    minmax(100px, 0.8fr)
+    minmax(140px, 1.4fr)
+    minmax(120px, 1fr)
+    minmax(100px, auto);
+  gap: 14px;
+  align-items: center;
+  min-width: 700px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+}
+
+.statement-header {
+  border-radius: 12px 12px 0 0;
+  background: #1e293b;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.income-statement {
+  border-left: 5px solid #16a34a;
+  background: #f0fdf4;
+}
+
+.expense-statement {
+  border-left: 5px solid #dc2626;
+  background: #fef2f2;
+}
+
+.type-badge {
+  width: fit-content;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.type-badge.income {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.type-badge.expense {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.income-amount {
+  color: #15803d;
+  font-weight: 800;
+}
+
+.expense-amount {
+  color: #dc2626;
+  font-weight: 800;
+}
+
+.dark .statement-header {
+  background: #020617;
+}
+
+.dark .income-statement {
+  background: rgba(22, 163, 74, 0.13);
+}
+
+.dark .expense-statement {
+  background: rgba(220, 38, 38, 0.13);
+}
+
+/* Action Buttons */
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.action-buttons button {
+  min-width: 42px;
+  padding: 8px 10px;
+}
+
+.action-buttons button:last-child {
+  background: #dc2626;
+}
+
+/* Empty Message */
+
+.empty-message {
+  padding: 24px;
+  text-align: center;
+}
+
+/* Responsive */
+
+@media (max-width: 900px) {
+  .summary-area {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .top-controls {
+    grid-template-columns: 1fr;
   }
 }
 
+@media (max-width: 640px) {
+  .app {
+    padding: 12px;
+  }
+
+  header,
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .summary-area {
+    grid-template-columns: 1fr;
+  }
+
+  .source-input-row {
+    grid-template-columns: 1fr;
+  }
+
+  .transaction-form-actions {
+    flex-direction: column;
+  }
+
+  .backup-buttons {
+    flex-direction: column;
+  }
+
+  .backup-buttons button {
+    width: 100%;
+  }
+}
