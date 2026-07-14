@@ -8,7 +8,7 @@ function SummaryCard({ title, amount, className = "" }: SummaryCardProps) {
   return (
     <div className={`summary-card ${className}`}>
       <h3>{title}</h3>
-      <p>¥{amount}</p>
+     <p>¥{amount.toLocaleString()}</p>
     </div>
   );
 }

@@ -109,7 +109,7 @@ function MonthlyBudget({
           </small>
 
           <strong>
-            {budgetExceeded ? "-" : ""}
+            
             ¥{Math.abs(remainingBudget).toLocaleString()}
           </strong>
         </div>
