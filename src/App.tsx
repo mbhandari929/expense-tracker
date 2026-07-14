@@ -1,3 +1,4 @@
+import MonthlyBudget from "./components/MonthlyBudget";
 import Header from "./components/Header";
 import SummaryCard from "./components/SummaryCard";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -184,10 +185,7 @@ function App() {
     return report;
   }, {} as Record<string, { income: number; expense: number }>);
 
-  const recentItems = [...allItems]
-    .sort((a, b) => b.date.localeCompare(a.date))
-    .slice(0, 5);
-
+  
   const COLORS = ["#00C49F", "#0088FE", "#FFBB28", "#FF8042", "#FF4560"];
 
   const resetForm = () => {
@@ -411,7 +409,10 @@ function App() {
         />
         <SummaryCard title="Balance" amount={balance} className="balance" />
       </div>
-
+      <MonthlyBudget
+        expenses={expenses}
+         selectedMonth={selectedMonth}
+/>
       <div className="backup-buttons">
         <button onClick={exportCSV}>CSV Export</button>
         <button onClick={exportJSON}>JSON Backup</button>
@@ -497,26 +498,7 @@ function App() {
         </div>
       </div>
 
-      <div className="report-area single-report-area">
-        <div className="report-card">
-          <h2>Income & Expense Report</h2>
-
-          {transactionReport.length === 0 ? (
-            <p>No transaction report yet.</p>
-          ) : (
-            transactionReport.map((item) => (
-              <div
-                key={`${item.type}-${item.source}`}
-                className={`report-row ${item.type}-report-row`}
-              >
-                <span>{item.type === "income" ? "Income" : "Expense"}</span>
-                <span>{item.source}</span>
-                <span>¥{item.total}</span>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
+      
 
       <div className="chart-area single-chart-area">
         <div className="chart-box">
@@ -549,93 +531,88 @@ function App() {
         </div>
       </div>
 
-      <div className="report-card">
-        <h2>📅 Monthly Report</h2>
-
-        {Object.entries(monthlyReport)
-          .sort(([firstMonth], [secondMonth]) =>
-            secondMonth.localeCompare(firstMonth)
-          )
-          .map(([month, data]) => (
-            <div key={month} className="report-row">
-              <span>{month}</span>
-              <span>Income: ¥{data.income}</span>
-              <span>Expense: ¥{data.expense}</span>
-              <span>Balance: ¥{data.income - data.expense}</span>
-            </div>
-          ))}
-      </div>
-
-      <div className="report-card">
-        <h2>Recent 5 Transactions</h2>
-
-        {recentItems.length === 0 ? (
-          <p>No recent transactions.</p>
-        ) : (
-          recentItems.map((item) => (
-            <div key={item.id} className="report-row">
-              <span>{item.date.slice(0, 10)}</span>
-              <span>{item.text}</span>
-              <span>{item.type}</span>
-              <span>¥{item.amount}</span>
-            </div>
-          ))
-        )}
-      </div>
+      
 
       <div className="history-area single-history-area">
-        <div className="history-box">
-          <h2>Income & Expense Statement</h2>
+  <div className="history-box">
+    <h2>Income & Expense Statement</h2>
 
-          <div className="statement-table">
-            <div className="statement-row statement-header">
-              <span>Date</span>
-              <span>Type</span>
-              <span>Source</span>
-              <span>Amount</span>
-              <span>Action</span>
-            </div>
+    <div className="monthly-summary-inside">
+      <h3>📅 Monthly Report</h3>
 
-            {filteredTransactions.length === 0 ? (
-              <p className="empty-message">No transactions found.</p>
-            ) : (
-              filteredTransactions.map((item) => (
-                <div
-                  key={item.id}
-                  className={`statement-row ${item.type === "income"
-                    ? "income-statement"
-                    : "expense-statement"
-                    }`}
-                >
-                  <span>{item.date.slice(0, 10)}</span>
+      {Object.entries(monthlyReport)
+        .sort(([firstMonth], [secondMonth]) =>
+          secondMonth.localeCompare(firstMonth)
+        )
+        .map(([month, data]) => (
+          <div key={month} className="monthly-summary-row">
+            <strong>{month}</strong>
 
-                  <span className={`type-badge ${item.type}`}>
-                    {item.type === "income" ? "Income" : "Expense"}
-                  </span>
+            <span className="income-amount">
+              Income: ¥{data.income.toLocaleString()}
+            </span>
 
-                  <strong>{item.text}</strong>
+            <span className="expense-amount">
+              Expense: ¥{data.expense.toLocaleString()}
+            </span>
 
-                  <span
-                    className={
-                      item.type === "income"
-                        ? "income-amount"
-                        : "expense-amount"
-                    }
-                  >
-                    {item.type === "income" ? "+" : "-"}¥
-                    {item.amount.toLocaleString()}
-                  </span>
-
-                  <div className="action-buttons">
-                    <button onClick={() => editTransaction(item)}>✏️</button>
-                    <button onClick={() => deleteTransaction(item)}>×</button>
-                  </div>
-                </div>
-              ))
-            )}
+            <span>
+              Balance: ¥{(data.income - data.expense).toLocaleString()}
+            </span>
           </div>
-        </div>
+        ))}
+    </div>
+
+    <div className="statement-table">
+      <div className="statement-row statement-header">
+        <span>Date</span>
+        <span>Type</span>
+        <span>Source</span>
+        <span>Amount</span>
+        <span>Action</span>
       </div>
+
+      {filteredTransactions.length === 0 ? (
+        <p className="empty-message">No transactions found.</p>
+      ) : (
+        filteredTransactions.map((item) => (
+          <div
+            key={item.id}
+            className={`statement-row ${
+              item.type === "income"
+                ? "income-statement"
+                : "expense-statement"
+            }`}
+          >
+            <span>{item.date.slice(0, 10)}</span>
+
+            <span className={`type-badge ${item.type}`}>
+              {item.type === "income" ? "Income" : "Expense"}
+            </span>
+
+            <strong>{item.text}</strong>
+
+            <span
+              className={
+                item.type === "income"
+                  ? "income-amount"
+                  : "expense-amount"
+              }
+            >
+              {item.type === "income" ? "+" : "-"}¥
+              {item.amount.toLocaleString()}
+            </span>
+
+            <div className="action-buttons">
+              <button onClick={() => editTransaction(item)}>✏️</button>
+              <button onClick={() => deleteTransaction(item)}>×</button>
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  </div>
+</div>
     </div>
   );
 }
