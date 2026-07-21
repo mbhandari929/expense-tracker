@@ -30,7 +30,7 @@ const fixOldData = (items: any[], type: TransactionType): Item[] => {
     id: item.id || createId(),
     text: item.text,
     amount: Number(item.amount),
-    date: item.date?.includes("T") ? item.date : new Date().toISOString(),
+    date: item.date || new Date().toISOString().slice(0, 10),
     type,
   }));
 };
@@ -40,18 +40,32 @@ function App() {
     useState<TransactionType>("income");
   const [transactionText, setTransactionText] = useState("");
   const [transactionAmount, setTransactionAmount] = useState("");
+const [transactionDate, setTransactionDate] = useState(
+  new Date().toISOString().slice(0, 10)
+);
   const [newSource, setNewSource] = useState("");
   const [editId, setEditId] = useState<string | null>(null);
 
   const [searchText, setSearchText] = useState("");
-  const [selectedMonth, setSelectedMonth] = useState("all");
+  const getCurrentMonth = () => {
+  const today = new Date();
+
+  return `${today.getFullYear()}-${String(
+    today.getMonth() + 1
+  ).padStart(2, "0")}`;
+};
+  const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
   const [darkMode, setDarkMode] = useState(false);
 
   const importInputRef = useRef<HTMLInputElement | null>(null);
 
   const [openingBalance, setOpeningBalance] = useState<number>(() => {
-    return Number(localStorage.getItem("openingBalance")) || 0;
-  });
+  const savedOpeningBalance = localStorage.getItem("openingBalance");
+  return savedOpeningBalance ? Number(savedOpeningBalance) : 0;
+});
+useEffect(() => {
+  localStorage.setItem("openingBalance", String(openingBalance));
+}, [openingBalance]);
 
   const [incomeSources, setIncomeSources] = useState<string[]>(() => {
     const saved = localStorage.getItem("incomeSources");
@@ -114,13 +128,14 @@ function App() {
   }, [allItems]);
 
   const monthFilteredItems = useMemo(() => {
-    if (selectedMonth === "all") return allItems;
+  if (selectedMonth === "all") {
+    return allItems;
+  }
 
-    return allItems.filter(
-      (item) => item.date.slice(0, 7) === selectedMonth
-    );
-  }, [allItems, selectedMonth]);
-
+  return allItems.filter(
+    (item) => item.date.slice(0, 7) === selectedMonth
+  );
+}, [allItems, selectedMonth]);
   const monthFilteredIncomes = monthFilteredItems.filter(
     (item) => item.type === "income"
   );
@@ -191,6 +206,7 @@ function App() {
   const resetForm = () => {
     setTransactionText("");
     setTransactionAmount("");
+    setTransactionDate(new Date().toISOString().slice(0, 10));
     setNewSource("");
     setEditId(null);
   };
@@ -223,7 +239,9 @@ function App() {
       if (!originalItem) return;
 
       const updatedItem: Item = {
+        
         ...originalItem,
+        date: transactionDate,
         text,
         amount,
         type: transactionType,
@@ -253,7 +271,7 @@ function App() {
         id: createId(),
         text,
         amount,
-        date: new Date().toISOString(),
+        date: transactionDate,
         type: transactionType,
       };
 
@@ -268,9 +286,11 @@ function App() {
   };
 
   const editTransaction = (item: Item) => {
+    setTransactionDate(new Date().toISOString().slice(0, 10));
     setTransactionType(item.type);
     setTransactionText(item.text);
     setTransactionAmount(String(item.amount));
+    setTransactionDate(item.date);
     setEditId(item.id);
   };
 
@@ -366,15 +386,24 @@ function App() {
       <Header darkMode={darkMode} setDarkMode={setDarkMode} />
 
       <div className="top-controls">
-        <input
-          type="number"
-          value={openingBalance}
-          onChange={(event) =>
-            setOpeningBalance(Number(event.target.value))
-          }
-          placeholder="Opening Balance"
-        />
+       <div className="opening-balance-field">
+  <label htmlFor="opening-balance">Opening Balance</label>
 
+  <div className="opening-balance-input">
+    <span>¥</span>
+
+    <input
+      id="opening-balance"
+      type="number"
+      min="0"
+      value={openingBalance || ""}
+      onChange={(event) =>
+        setOpeningBalance(Number(event.target.value))
+      }
+      placeholder="Enter amount"
+    />
+  </div>
+</div>
         <select
           value={selectedMonth}
           onChange={(event) => setSelectedMonth(event.target.value)}
@@ -444,6 +473,13 @@ function App() {
             <option value="income">Income</option>
             <option value="expense">Expense</option>
           </select>
+
+          <label>Transaction Date</label>
+          <input
+            type="date"
+            value={transactionDate}
+            onChange={(event) => setTransactionDate(event.target.value)}
+          />
 
           <label>Add New Source</label>
           <div className="source-input-row">
