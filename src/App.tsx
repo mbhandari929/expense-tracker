@@ -13,6 +13,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import "./App.css";
+import TransactionForm from "./components/TransactionForm";
 
 type TransactionType = "income" | "expense";
 
@@ -23,6 +24,7 @@ type Item = {
   date: string;
   type: TransactionType;
 };
+
 
 const createId = () => crypto.randomUUID();
 
@@ -457,82 +459,27 @@ useEffect(() => {
         />
       </div>
 
-      <div className="source-area compact-area single-transaction-area">
-        <div className="transaction-form-card">
-          <h2>{editId ? "Edit Transaction" : "Add Transaction"}</h2>
-
-          <label>Transaction Type</label>
-          <select
-            value={transactionType}
-            onChange={(event) => {
-              setTransactionType(event.target.value as TransactionType);
-              setTransactionText("");
-            }}
-          >
-            <option value="income">Income</option>
-            <option value="expense">Expense</option>
-          </select>
-
-          <label>Transaction Date</label>
-          <input
-            type="date"
-            value={transactionDate}
-            onChange={(event) => setTransactionDate(event.target.value)}
-          />
-
-          <label>Add New Source</label>
-          <div className="source-input-row">
-            <input
-              type="text"
-              value={newSource}
-              onChange={(event) => setNewSource(event.target.value)}
-              placeholder={
-                transactionType === "income"
-                  ? "Add income source"
-                  : "Add expense source"
-              }
-            />
-            <button type="button" onClick={addSource}>
-              Add Source
-            </button>
-          </div>
-
-          <label>Source</label>
-          <select
-            value={transactionText}
-            onChange={(event) => setTransactionText(event.target.value)}
-          >
-            <option value="">Select source</option>
-            {sourceOptions.map((source) => (
-              <option key={source} value={source}>
-                {source}
-              </option>
-            ))}
-          </select>
-
-          <label>Amount</label>
-          <input
-            type="number"
-            min="0"
-            value={transactionAmount}
-            onChange={(event) => setTransactionAmount(event.target.value)}
-            placeholder="Amount"
-          />
-
-          <div className="transaction-form-actions">
-            <button type="button" onClick={saveTransaction}>
-              {editId ? "Update Transaction" : "Add Transaction"}
-            </button>
-
-            {editId && (
-              <button type="button" onClick={resetForm}>
-                Cancel
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
+     <TransactionForm
+       type={transactionType}
+       date={transactionDate}
+       source={transactionText}
+       amount={transactionAmount}
+       newSource={newSource}
+       sourceOptions={sourceOptions}
+       isEditing={editId !== null}
+      onTypeChange={(type: TransactionType) => {
+        setTransactionType(type);
+        setTransactionText("");
+        setNewSource("");
+      }}
+       onDateChange={setTransactionDate}
+       onSourceChange={setTransactionText}
+       onAmountChange={setTransactionAmount}
+       onNewSourceChange={setNewSource}
+       onAddSource={addSource}
+       onSubmit={saveTransaction}
+       onCancel={resetForm}
+    />
       
 
       <div className="chart-area single-chart-area">
