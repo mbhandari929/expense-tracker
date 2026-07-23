@@ -1,4 +1,5 @@
 import MonthlyBudget from "./components/MonthlyBudget";
+import MonthlyReport from "./components/MonthlyReport";
 import Header from "./components/Header";
 import SummaryCard from "./components/SummaryCard";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -469,31 +470,8 @@ function App() {
         <div className="history-box">
           <h2>Income & Expense Statement</h2>
 
-          <div className="monthly-summary-inside">
-            <h3>📅 Monthly Report</h3>
+          <MonthlyReport report={monthlyReport} />
 
-            {Object.entries(monthlyReport)
-              .sort(([firstMonth], [secondMonth]) =>
-                secondMonth.localeCompare(firstMonth)
-              )
-              .map(([month, data]) => (
-                <div key={month} className="monthly-summary-row">
-                  <strong>{month}</strong>
-
-                  <span className="income-amount">
-                   Income: {formatCurrency(data.income)}
-                  </span>
-
-                  <span className="expense-amount">
-                    Expense: {formatCurrency(data.expense)}
-                  </span>
-
-                  <span>
-                    Balance: {formatCurrency(data.income - data.expense)}
-                  </span>
-                </div>
-              ))}
-          </div>
 
           <div className="statement-table">
             <div className="statement-row statement-header">
