@@ -7,14 +7,8 @@ import ActionButtons from "./components/ActionButtons";
 import TransactionForm from "./components/TransactionForm";
 import { formatCurrency } from "./utils/currency";
 import OpeningBalanceField from "./components/OpeningBalanceField";
-import {
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from "recharts";
+import TransactionChart from "./components/TransactionChart";
+// Recharts imports removed (not used in this file). TransactionChart component handles chart rendering.
 import "./App.css";
 
 
@@ -203,9 +197,6 @@ function App() {
 
     return report;
   }, {} as Record<string, { income: number; expense: number }>);
-
-
-  const COLORS = ["#00C49F", "#0088FE", "#FFBB28", "#FF8042", "#FF4560"];
 
   const resetForm = () => {
     setTransactionText("");
@@ -471,37 +462,7 @@ function App() {
       />
 
 
-      <div className="chart-area single-chart-area">
-        <div className="chart-box">
-          <h2>Income & Expense Pie Chart</h2>
-
-          {chartData.length === 0 ? (
-            <p>No chart data yet.</p>
-          ) : (
-            <ResponsiveContainer width="100%" height={350}>
-              <PieChart>
-                <Pie
-                  data={chartData}
-                  dataKey="total"
-                  nameKey="name"
-                  outerRadius={110}
-                  label
-                >
-                  {chartData.map((_, index) => (
-                    <Cell
-                      key={index}
-                      fill={COLORS[index % COLORS.length]}
-                    />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          )}
-        </div>
-      </div>
-
+      <TransactionChart data={chartData} />
 
 
       <div className="history-area single-history-area">
