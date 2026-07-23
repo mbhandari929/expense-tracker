@@ -105,9 +105,7 @@ useEffect(() => {
     localStorage.setItem("expenseSources", JSON.stringify(expenseSources));
   }, [expenseSources]);
 
-  useEffect(() => {
-    localStorage.setItem("openingBalance", String(openingBalance));
-  }, [openingBalance]);
+  
 
   const allItems = useMemo(
     () => [...incomes, ...expenses],
