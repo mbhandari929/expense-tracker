@@ -3,6 +3,7 @@ import Header from "./components/Header";
 import SummaryCard from "./components/SummaryCard";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
+import ActionButtons from "./components/ActionButtons";
 import {
   PieChart,
   Pie,
@@ -637,10 +638,10 @@ useEffect(() => {
               {item.amount.toLocaleString()}
             </span>
 
-            <div className="action-buttons">
-              <button onClick={() => editTransaction(item)}>✏️</button>
-              <button onClick={() => deleteTransaction(item)}>×</button>
-            </div>
+            <ActionButtons
+          onEdit={() => editTransaction(item)}
+          onDelete={() => deleteTransaction(item)}
+/>
           </div>
         ))
       )}
