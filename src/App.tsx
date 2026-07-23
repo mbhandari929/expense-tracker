@@ -43,32 +43,32 @@ function App() {
     useState<TransactionType>("income");
   const [transactionText, setTransactionText] = useState("");
   const [transactionAmount, setTransactionAmount] = useState("");
-const [transactionDate, setTransactionDate] = useState(
-  new Date().toISOString().slice(0, 10)
-);
+  const [transactionDate, setTransactionDate] = useState(
+    new Date().toISOString().slice(0, 10)
+  );
   const [newSource, setNewSource] = useState("");
   const [editId, setEditId] = useState<string | null>(null);
 
   const [searchText, setSearchText] = useState("");
   const getCurrentMonth = () => {
-  const today = new Date();
+    const today = new Date();
 
-  return `${today.getFullYear()}-${String(
-    today.getMonth() + 1
-  ).padStart(2, "0")}`;
-};
+    return `${today.getFullYear()}-${String(
+      today.getMonth() + 1
+    ).padStart(2, "0")}`;
+  };
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
   const [darkMode, setDarkMode] = useState(false);
 
   const importInputRef = useRef<HTMLInputElement | null>(null);
 
   const [openingBalance, setOpeningBalance] = useState<number>(() => {
-  const savedOpeningBalance = localStorage.getItem("openingBalance");
-  return savedOpeningBalance ? Number(savedOpeningBalance) : 0;
-});
-useEffect(() => {
-  localStorage.setItem("openingBalance", String(openingBalance));
-}, [openingBalance]);
+    const savedOpeningBalance = localStorage.getItem("openingBalance");
+    return savedOpeningBalance ? Number(savedOpeningBalance) : 0;
+  });
+  useEffect(() => {
+    localStorage.setItem("openingBalance", String(openingBalance));
+  }, [openingBalance]);
 
   const [incomeSources, setIncomeSources] = useState<string[]>(() => {
     const saved = localStorage.getItem("incomeSources");
@@ -108,7 +108,7 @@ useEffect(() => {
     localStorage.setItem("expenseSources", JSON.stringify(expenseSources));
   }, [expenseSources]);
 
-  
+
 
   const allItems = useMemo(
     () => [...incomes, ...expenses],
@@ -129,14 +129,14 @@ useEffect(() => {
   }, [allItems]);
 
   const monthFilteredItems = useMemo(() => {
-  if (selectedMonth === "all") {
-    return allItems;
-  }
+    if (selectedMonth === "all") {
+      return allItems;
+    }
 
-  return allItems.filter(
-    (item) => item.date.slice(0, 7) === selectedMonth
-  );
-}, [allItems, selectedMonth]);
+    return allItems.filter(
+      (item) => item.date.slice(0, 7) === selectedMonth
+    );
+  }, [allItems, selectedMonth]);
   const monthFilteredIncomes = monthFilteredItems.filter(
     (item) => item.type === "income"
   );
@@ -201,7 +201,7 @@ useEffect(() => {
     return report;
   }, {} as Record<string, { income: number; expense: number }>);
 
-  
+
   const COLORS = ["#00C49F", "#0088FE", "#FFBB28", "#FF8042", "#FF4560"];
 
   const resetForm = () => {
@@ -240,7 +240,7 @@ useEffect(() => {
       if (!originalItem) return;
 
       const updatedItem: Item = {
-        
+
         ...originalItem,
         date: transactionDate,
         text,
@@ -287,7 +287,7 @@ useEffect(() => {
   };
 
   const editTransaction = (item: Item) => {
-    
+
     setTransactionType(item.type);
     setTransactionText(item.text);
     setTransactionAmount(String(item.amount));
@@ -387,24 +387,24 @@ useEffect(() => {
       <Header darkMode={darkMode} setDarkMode={setDarkMode} />
 
       <div className="top-controls">
-       <div className="opening-balance-field">
-  <label htmlFor="opening-balance">Opening Balance</label>
+        <div className="opening-balance-field">
+          <label htmlFor="opening-balance">Opening Balance</label>
 
-  <div className="opening-balance-input">
-    <span>¥</span>
+          <div className="opening-balance-input">
+            <span>¥</span>
 
-    <input
-      id="opening-balance"
-      type="number"
-      min="0"
-      value={openingBalance || ""}
-      onChange={(event) =>
-        setOpeningBalance(Number(event.target.value))
-      }
-      placeholder="Enter amount"
-    />
-  </div>
-</div>
+            <input
+              id="opening-balance"
+              type="number"
+              min="0"
+              value={openingBalance || ""}
+              onChange={(event) =>
+                setOpeningBalance(Number(event.target.value))
+              }
+              placeholder="Enter amount"
+            />
+          </div>
+        </div>
         <select
           value={selectedMonth}
           onChange={(event) => setSelectedMonth(event.target.value)}
@@ -441,8 +441,8 @@ useEffect(() => {
       </div>
       <MonthlyBudget
         expenses={expenses}
-         selectedMonth={selectedMonth}
-/>
+        selectedMonth={selectedMonth}
+      />
       <div className="backup-buttons">
         <button onClick={exportCSV}>CSV Export</button>
         <button onClick={exportJSON}>JSON Backup</button>
@@ -459,28 +459,28 @@ useEffect(() => {
         />
       </div>
 
-     <TransactionForm
-       type={transactionType}
-       date={transactionDate}
-       source={transactionText}
-       amount={transactionAmount}
-       newSource={newSource}
-       sourceOptions={sourceOptions}
-       isEditing={editId !== null}
-      onTypeChange={(type: TransactionType) => {
-        setTransactionType(type);
-        setTransactionText("");
-        setNewSource("");
-      }}
-       onDateChange={setTransactionDate}
-       onSourceChange={setTransactionText}
-       onAmountChange={setTransactionAmount}
-       onNewSourceChange={setNewSource}
-       onAddSource={addSource}
-       onSubmit={saveTransaction}
-       onCancel={resetForm}
-    />
-      
+      <TransactionForm
+        type={transactionType}
+        date={transactionDate}
+        source={transactionText}
+        amount={transactionAmount}
+        newSource={newSource}
+        sourceOptions={sourceOptions}
+        isEditing={editId !== null}
+        onTypeChange={(type: TransactionType) => {
+          setTransactionType(type);
+          setTransactionText("");
+          setNewSource("");
+        }}
+        onDateChange={setTransactionDate}
+        onSourceChange={setTransactionText}
+        onAmountChange={setTransactionAmount}
+        onNewSourceChange={setNewSource}
+        onAddSource={addSource}
+        onSubmit={saveTransaction}
+        onCancel={resetForm}
+      />
+
 
       <div className="chart-area single-chart-area">
         <div className="chart-box">
@@ -513,88 +513,87 @@ useEffect(() => {
         </div>
       </div>
 
-      
+
 
       <div className="history-area single-history-area">
-  <div className="history-box">
-    <h2>Income & Expense Statement</h2>
+        <div className="history-box">
+          <h2>Income & Expense Statement</h2>
 
-    <div className="monthly-summary-inside">
-      <h3>📅 Monthly Report</h3>
+          <div className="monthly-summary-inside">
+            <h3>📅 Monthly Report</h3>
 
-      {Object.entries(monthlyReport)
-        .sort(([firstMonth], [secondMonth]) =>
-          secondMonth.localeCompare(firstMonth)
-        )
-        .map(([month, data]) => (
-          <div key={month} className="monthly-summary-row">
-            <strong>{month}</strong>
+            {Object.entries(monthlyReport)
+              .sort(([firstMonth], [secondMonth]) =>
+                secondMonth.localeCompare(firstMonth)
+              )
+              .map(([month, data]) => (
+                <div key={month} className="monthly-summary-row">
+                  <strong>{month}</strong>
 
-            <span className="income-amount">
-              Income: ¥{data.income.toLocaleString()}
-            </span>
+                  <span className="income-amount">
+                    Income: ¥{data.income.toLocaleString()}
+                  </span>
 
-            <span className="expense-amount">
-              Expense: ¥{data.expense.toLocaleString()}
-            </span>
+                  <span className="expense-amount">
+                    Expense: ¥{data.expense.toLocaleString()}
+                  </span>
 
-            <span>
-              Balance: ¥{(data.income - data.expense).toLocaleString()}
-            </span>
+                  <span>
+                    Balance: ¥{(data.income - data.expense).toLocaleString()}
+                  </span>
+                </div>
+              ))}
           </div>
-        ))}
-    </div>
 
-    <div className="statement-table">
-      <div className="statement-row statement-header">
-        <span>Date</span>
-        <span>Type</span>
-        <span>Source</span>
-        <span>Amount</span>
-        <span>Action</span>
+          <div className="statement-table">
+            <div className="statement-row statement-header">
+              <span>Date</span>
+              <span>Type</span>
+              <span>Source</span>
+              <span>Amount</span>
+              <span>Action</span>
+            </div>
+
+            {filteredTransactions.length === 0 ? (
+              <p className="empty-message">No transactions found.</p>
+            ) : (
+              filteredTransactions.map((item) => (
+                <div
+                  key={item.id}
+                  className={`statement-row ${item.type === "income"
+                    ? "income-statement"
+                    : "expense-statement"
+                    }`}
+                >
+                  <span>{item.date.slice(0, 10)}</span>
+
+                  <span className={`type-badge ${item.type}`}>
+                    {item.type === "income" ? "Income" : "Expense"}
+                  </span>
+
+                  <strong>{item.text}</strong>
+
+                  <span
+                    className={
+                      item.type === "income"
+                        ? "income-amount"
+                        : "expense-amount"
+                    }
+                  >
+                    {item.type === "income" ? "+" : "-"}¥
+                    {item.amount.toLocaleString()}
+                  </span>
+
+                  <ActionButtons
+                    onEdit={() => editTransaction(item)}
+                    onDelete={() => deleteTransaction(item)}
+                  />
+                </div>
+              ))
+            )}
+          </div>
+        </div>
       </div>
-
-      {filteredTransactions.length === 0 ? (
-        <p className="empty-message">No transactions found.</p>
-      ) : (
-        filteredTransactions.map((item) => (
-          <div
-            key={item.id}
-            className={`statement-row ${
-              item.type === "income"
-                ? "income-statement"
-                : "expense-statement"
-            }`}
-          >
-            <span>{item.date.slice(0, 10)}</span>
-
-            <span className={`type-badge ${item.type}`}>
-              {item.type === "income" ? "Income" : "Expense"}
-            </span>
-
-            <strong>{item.text}</strong>
-
-            <span
-              className={
-                item.type === "income"
-                  ? "income-amount"
-                  : "expense-amount"
-              }
-            >
-              {item.type === "income" ? "+" : "-"}¥
-              {item.amount.toLocaleString()}
-            </span>
-
-            <ActionButtons
-          onEdit={() => editTransaction(item)}
-          onDelete={() => deleteTransaction(item)}
-/>
-          </div>
-        ))
-      )}
-    </div>
-  </div>
-</div>
     </div>
   );
 }
