@@ -6,6 +6,7 @@ import type { ChangeEvent } from "react";
 import ActionButtons from "./components/ActionButtons";
 import TransactionForm from "./components/TransactionForm";
 import { formatCurrency } from "./utils/currency";
+import OpeningBalanceField from "./components/OpeningBalanceField";
 import {
   PieChart,
   Pie,
@@ -389,24 +390,10 @@ function App() {
       <Header darkMode={darkMode} setDarkMode={setDarkMode} />
 
       <div className="top-controls">
-        <div className="opening-balance-field">
-          <label htmlFor="opening-balance">Opening Balance</label>
-
-          <div className="opening-balance-input">
-            <span>¥</span>
-
-            <input
-              id="opening-balance"
-              type="number"
-              min="0"
-              value={openingBalance || ""}
-              onChange={(event) =>
-                setOpeningBalance(Number(event.target.value))
-              }
-              placeholder="Enter amount"
-            />
-          </div>
-        </div>
+       <OpeningBalanceField
+  value={openingBalance}
+  onChange={setOpeningBalance}
+/>
         <select
           value={selectedMonth}
           onChange={(event) => setSelectedMonth(event.target.value)}
