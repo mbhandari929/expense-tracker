@@ -284,7 +284,7 @@ useEffect(() => {
   };
 
   const editTransaction = (item: Item) => {
-    setTransactionDate(new Date().toISOString().slice(0, 10));
+    
     setTransactionType(item.type);
     setTransactionText(item.text);
     setTransactionAmount(String(item.amount));
