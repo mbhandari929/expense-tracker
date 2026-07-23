@@ -1,14 +1,12 @@
 import MonthlyBudget from "./components/MonthlyBudget";
-import MonthlyReport from "./components/MonthlyReport";
 import Header from "./components/Header";
 import SummaryCard from "./components/SummaryCard";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
-import ActionButtons from "./components/ActionButtons";
 import TransactionForm from "./components/TransactionForm";
-import { formatCurrency } from "./utils/currency";
 import OpeningBalanceField from "./components/OpeningBalanceField";
 import TransactionChart from "./components/TransactionChart";
+import TransactionStatement from "./components/TransactionStatement";
 // Recharts imports removed (not used in this file). TransactionChart component handles chart rendering.
 import "./App.css";
 
@@ -183,21 +181,7 @@ function App() {
     total: item.total,
   }));
 
-  const monthlyReport = allItems.reduce((report, item) => {
-    const month = item.date.slice(0, 7);
-
-    if (!report[month]) {
-      report[month] = { income: 0, expense: 0 };
-    }
-
-    if (item.type === "income") {
-      report[month].income += item.amount;
-    } else {
-      report[month].expense += item.amount;
-    }
-
-    return report;
-  }, {} as Record<string, { income: number; expense: number }>);
+  // monthlyReport not used in this file; removed to avoid unused variable warning
 
   const resetForm = () => {
     setTransactionText("");
@@ -463,65 +447,18 @@ function App() {
       />
 
 
+      <TransactionStatement
+        {...({
+          transactions: filteredTransactions,
+          onEdit: editTransaction,
+          onDelete: deleteTransaction,
+        } as any)}
+      />
+
       <TransactionChart data={chartData} />
 
 
-      <div className="history-area single-history-area">
-        <div className="history-box">
-          <h2>Income & Expense Statement</h2>
 
-          <MonthlyReport report={monthlyReport} />
-
-
-          <div className="statement-table">
-            <div className="statement-row statement-header">
-              <span>Date</span>
-              <span>Type</span>
-              <span>Source</span>
-              <span>Amount</span>
-              <span>Action</span>
-            </div>
-
-            {filteredTransactions.length === 0 ? (
-              <p className="empty-message">No transactions found.</p>
-            ) : (
-              filteredTransactions.map((item) => (
-                <div
-                  key={item.id}
-                  className={`statement-row ${item.type === "income"
-                    ? "income-statement"
-                    : "expense-statement"
-                    }`}
-                >
-                  <span>{item.date.slice(0, 10)}</span>
-
-                  <span className={`type-badge ${item.type}`}>
-                    {item.type === "income" ? "Income" : "Expense"}
-                  </span>
-
-                  <strong>{item.text}</strong>
-
-                  <span
-                    className={
-                      item.type === "income"
-                        ? "income-amount"
-                        : "expense-amount"
-                    }
-                  >
-                    {item.type === "income" ? "+" : "-"}
-                    {formatCurrency(item.amount)}
-                  </span>
-
-                  <ActionButtons
-                    onEdit={() => editTransaction(item)}
-                    onDelete={() => deleteTransaction(item)}
-                  />
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
