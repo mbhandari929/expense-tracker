@@ -4,6 +4,8 @@ import SummaryCard from "./components/SummaryCard";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import ActionButtons from "./components/ActionButtons";
+import TransactionForm from "./components/TransactionForm";
+import { formatCurrency } from "./utils/currency";
 import {
   PieChart,
   Pie,
@@ -13,7 +15,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import "./App.css";
-import TransactionForm from "./components/TransactionForm";
+
 
 type TransactionType = "income" | "expense";
 
@@ -531,15 +533,15 @@ function App() {
                   <strong>{month}</strong>
 
                   <span className="income-amount">
-                    Income: ¥{data.income.toLocaleString()}
+                   Income: {formatCurrency(data.income)}
                   </span>
 
                   <span className="expense-amount">
-                    Expense: ¥{data.expense.toLocaleString()}
+                    Expense: {formatCurrency(data.expense)}
                   </span>
 
                   <span>
-                    Balance: ¥{(data.income - data.expense).toLocaleString()}
+                    Balance: {formatCurrency(data.income - data.expense)}
                   </span>
                 </div>
               ))}
@@ -580,8 +582,8 @@ function App() {
                         : "expense-amount"
                     }
                   >
-                    {item.type === "income" ? "+" : "-"}¥
-                    {item.amount.toLocaleString()}
+                    {item.type === "income" ? "+" : "-"}
+                    {formatCurrency(item.amount)}
                   </span>
 
                   <ActionButtons
