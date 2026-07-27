@@ -7,6 +7,16 @@ function StatementActionButtons({
   onEdit,
   onDelete,
 }: StatementActionButtonsProps) {
+  const handleDelete = () => {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this transaction?"
+    );
+
+    if (confirmed) {
+      onDelete();
+    }
+  };
+
   return (
     <div className="statement-actions">
       <button
@@ -21,7 +31,7 @@ function StatementActionButtons({
       <button
         type="button"
         className="delete-button"
-        onClick={onDelete}
+        onClick={handleDelete}
         aria-label="Delete transaction"
       >
         ×
