@@ -5,10 +5,7 @@ type SummaryCardProps = {
 };
 
 function formatCurrency(amount: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(amount);
+  return `¥${amount.toLocaleString("en-US")}`;
 }
 
 function SummaryCard({
