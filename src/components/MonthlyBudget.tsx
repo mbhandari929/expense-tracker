@@ -15,7 +15,6 @@ type MonthlyBudgets = Record<string, number>;
 const formatCurrency = (amount: number) => {
   return `¥${amount.toLocaleString("en-US")}`;
 };
-
 function MonthlyBudget({
   expenses,
   selectedMonth,

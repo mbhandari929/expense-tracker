@@ -1,12 +1,13 @@
 import MonthlyBudget from "./components/MonthlyBudget";
 import Header from "./components/Header";
 import SummaryCard from "./components/SummaryCard";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ChangeEvent } from "react";
 import TransactionForm from "./components/TransactionForm";
 import OpeningBalanceField from "./components/OpeningBalanceField";
 import TransactionChart from "./components/TransactionChart";
 import TransactionStatement from "./components/TransactionStatement";
+import ActionButtons from "./components/ActionButtons";
 // Recharts imports removed (not used in this file). TransactionChart component handles chart rendering.
 import "./App.css";
 
@@ -18,7 +19,7 @@ type Item = {
   text: string;
   amount: number;
 
-  
+
   date: string;
   type: TransactionType;
 };
@@ -26,16 +27,56 @@ type Item = {
 
 const createId = () => crypto.randomUUID();
 
-const fixOldData = (items: any[], type: TransactionType): Item[] => {
-  return items.map((item) => ({
-    id: item.id || createId(),
-    text: item.text,
-    amount: Number(item.amount),
-    date: item.date || new Date().toISOString().slice(0, 10),
-    type,
-  }));
+const isRecord = (
+  value: unknown
+): value is Record<string, unknown> => {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value)
+  );
 };
 
+const fixOldData = (
+  items: unknown[],
+  type: TransactionType
+): Item[] => {
+  return items
+    .filter(isRecord)
+    .map((item) => {
+      const amount = Number(item.amount);
+
+      return {
+        id:
+          typeof item.id === "string" && item.id
+            ? item.id
+            : createId(),
+
+        text:
+          typeof item.text === "string"
+            ? item.text
+            : "",
+
+        amount: Number.isFinite(amount) ? amount : 0,
+
+        date:
+          typeof item.date === "string" && item.date
+            ? item.date
+            : new Date().toISOString().slice(0, 10),
+
+        type,
+      };
+    });
+};
+function loadJson<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key);
+
+    return raw ? (JSON.parse(raw) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+}
 function App() {
   const [transactionType, setTransactionType] =
     useState<TransactionType>("income");
@@ -58,38 +99,40 @@ function App() {
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
   const [darkMode, setDarkMode] = useState(false);
 
-  const importInputRef = useRef<HTMLInputElement | null>(null);
-
   const [openingBalance, setOpeningBalance] = useState<number>(() => {
-    const savedOpeningBalance = localStorage.getItem("openingBalance");
+    const savedOpeningBalance = loadJson<string | null>("openingBalance", null);
     return savedOpeningBalance ? Number(savedOpeningBalance) : 0;
   });
   useEffect(() => {
     localStorage.setItem("openingBalance", String(openingBalance));
   }, [openingBalance]);
 
-  const [incomeSources, setIncomeSources] = useState<string[]>(() => {
-    const saved = localStorage.getItem("incomeSources");
-    return saved ? JSON.parse(saved) : ["Salary", "Bonus", "Other"];
-  });
+  const [incomeSources, setIncomeSources] = useState<string[]>(() =>
+    loadJson("incomeSources", ["Salary", "Bonus", "Other"])
+  );
 
-  const [expenseSources, setExpenseSources] = useState<string[]>(() => {
-    const saved = localStorage.getItem("expenseSources");
-    return saved
-      ? JSON.parse(saved)
-      : ["Food", "Rent", "Transport", "Other"];
-  });
+  const [expenseSources, setExpenseSources] = useState<string[]>(() =>
+    loadJson("expenseSources", [
+      "Food",
+      "Rent",
+      "Transport",
+      "Other",
+    ])
+  );
 
-  const [incomes, setIncomes] = useState<Item[]>(() => {
-    const saved = localStorage.getItem("incomes");
-    return saved ? fixOldData(JSON.parse(saved), "income") : [];
-  });
+  const [incomes, setIncomes] = useState<Item[]>(() =>
+    fixOldData(
+      loadJson<unknown[]>("incomes", []),
+      "income"
+    )
+  );
 
-  const [expenses, setExpenses] = useState<Item[]>(() => {
-    const saved = localStorage.getItem("expenses");
-    return saved ? fixOldData(JSON.parse(saved), "expense") : [];
-  });
-
+  const [expenses, setExpenses] = useState<Item[]>(() =>
+    fixOldData(
+      loadJson<unknown[]>("expenses", []),
+      "expense"
+    )
+  );
   useEffect(() => {
     localStorage.setItem("incomes", JSON.stringify(incomes));
   }, [incomes]);
@@ -183,7 +226,6 @@ function App() {
     total: item.total,
   }));
 
-  // monthlyReport not used in this file; removed to avoid unused variable warning
 
   const resetForm = () => {
     setTransactionText("");
@@ -362,58 +404,58 @@ function App() {
 
     reader.readAsText(file);
   };
-const monthlyReport = useMemo(() => {
-  return allItems.reduce(
-    (report, item) => {
-      const month = item.date.slice(0, 7);
+  const monthlyReport = useMemo(() => {
+    return allItems.reduce(
+      (report, item) => {
+        const month = item.date.slice(0, 7);
 
-      if (!report[month]) {
-        report[month] = {
-          income: 0,
-          expense: 0,
-        };
-      }
+        if (!report[month]) {
+          report[month] = {
+            income: 0,
+            expense: 0,
+          };
+        }
 
-      if (item.type === "income") {
-        report[month].income += item.amount;
-      } else {
-        report[month].expense += item.amount;
-      }
+        if (item.type === "income") {
+          report[month].income += item.amount;
+        } else {
+          report[month].expense += item.amount;
+        }
 
-      return report;
-    },
-    {} as Record<string, { income: number; expense: number }>
-  );
-}, [allItems]);
+        return report;
+      },
+      {} as Record<string, { income: number; expense: number }>
+    );
+  }, [allItems]);
 
-return (
-  <div className={darkMode ? "app dark" : "app"}>
-    <Header darkMode={darkMode} setDarkMode={setDarkMode} />
+  return (
+    <div className={darkMode ? "app dark" : "app"}>
+      <Header darkMode={darkMode} setDarkMode={setDarkMode} />
 
-    <div className="top-controls">
-      <OpeningBalanceField
-        value={openingBalance}
-        onChange={setOpeningBalance}
-      />
-      <select
-        value={selectedMonth}
-        onChange={(event) => setSelectedMonth(event.target.value)}
-      >
-        <option value="all">All Months</option>
-        {months.map((month) => (
-          <option key={month} value={month}>
-            {month}
-          </option>
-        ))}
-      </select>
+      <div className="top-controls">
+        <OpeningBalanceField
+          value={openingBalance}
+          onChange={setOpeningBalance}
+        />
+        <select
+          value={selectedMonth}
+          onChange={(event) => setSelectedMonth(event.target.value)}
+        >
+          <option value="all">All Months</option>
+          {months.map((month) => (
+            <option key={month} value={month}>
+              {month}
+            </option>
+          ))}
+        </select>
 
-      <input
-        type="text"
-        placeholder="Search source..."
-        value={searchText}
-        onChange={(event) => setSearchText(event.target.value)}
-      />
-    </div>
+        <input
+          type="text"
+          placeholder="Search source..."
+          value={searchText}
+          onChange={(event) => setSearchText(event.target.value)}
+        />
+      </div>
 
       <div className="summary-area">
         <SummaryCard title="Opening Balance" amount={openingBalance} />
@@ -433,22 +475,11 @@ return (
         expenses={expenses}
         selectedMonth={selectedMonth}
       />
-      <div className="backup-buttons">
-        <button onClick={exportCSV}>CSV Export</button>
-        <button onClick={exportJSON}>JSON Backup</button>
-        <button onClick={() => importInputRef.current?.click()}>
-          JSON Import
-        </button>
-
-        <input
-          ref={importInputRef}
-          type="file"
-          accept=".json"
-          onChange={importJSON}
-          style={{ display: "none" }}
-        />
-      </div>
-
+      <ActionButtons
+        onExportCSV={exportCSV}
+        onBackupJSON={exportJSON}
+        onImportJSON={importJSON}
+      />
       <TransactionForm
         type={transactionType}
         date={transactionDate}
@@ -473,11 +504,11 @@ return (
 
 
       <TransactionStatement
-  items={filteredTransactions}
-  report={monthlyReport}
-  onEdit={editTransaction}
-  onDelete={deleteTransaction}
-/> 
+        items={filteredTransactions}
+        report={monthlyReport}
+        onEdit={editTransaction}
+        onDelete={deleteTransaction}
+      />
       <TransactionChart data={chartData} />
 
 

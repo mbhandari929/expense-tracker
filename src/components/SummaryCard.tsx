@@ -1,12 +1,10 @@
+import { formatCurrency } from "../utils/currency";
+
 type SummaryCardProps = {
   title: string;
   amount: number;
   className?: string;
 };
-
-function formatCurrency(amount: number) {
-  return `¥${amount.toLocaleString("en-US")}`;
-}
 
 function SummaryCard({
   title,
