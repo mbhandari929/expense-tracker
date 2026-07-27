@@ -12,6 +12,10 @@ type MonthlyBudgetProps = {
 
 type MonthlyBudgets = Record<string, number>;
 
+const formatCurrency = (amount: number) => {
+  return `¥${amount.toLocaleString("en-US")}`;
+};
+
 function MonthlyBudget({
   expenses,
   selectedMonth,
@@ -25,6 +29,7 @@ function MonthlyBudget({
     useState<MonthlyBudgets>(() => {
       try {
         const saved = localStorage.getItem("monthlyBudgets");
+
         return saved ? JSON.parse(saved) : {};
       } catch {
         return {};
@@ -40,35 +45,49 @@ function MonthlyBudget({
 
   const monthlyExpense = useMemo(() => {
     return expenses
-      .filter((item) => item.date.slice(0, 7) === activeMonth)
-      .reduce((sum, item) => sum + item.amount, 0);
+      .filter(
+        (item) => item.date.slice(0, 7) === activeMonth
+      )
+      .reduce(
+        (sum, item) => sum + item.amount,
+        0
+      );
   }, [expenses, activeMonth]);
 
-  const monthlyLimit = monthlyBudgets[activeMonth] || 0;
+  const monthlyLimit =
+    monthlyBudgets[activeMonth] || 0;
 
-  const remainingBudget = monthlyLimit - monthlyExpense;
+  const remainingBudget =
+    monthlyLimit - monthlyExpense;
 
   const usedPercentage =
     monthlyLimit > 0
-      ? Math.min((monthlyExpense / monthlyLimit) * 100, 100)
+      ? Math.min(
+          (monthlyExpense / monthlyLimit) * 100,
+          100
+        )
       : 0;
 
   const budgetExceeded =
-    monthlyLimit > 0 && monthlyExpense > monthlyLimit;
+    monthlyLimit > 0 &&
+    monthlyExpense > monthlyLimit;
 
   const changeMonthlyLimit = (value: string) => {
     const newLimit = Number(value);
 
     setMonthlyBudgets((previousBudgets) => ({
       ...previousBudgets,
-      [activeMonth]: newLimit >= 0 ? newLimit : 0,
+      [activeMonth]:
+        newLimit >= 0 ? newLimit : 0,
     }));
   };
 
   return (
     <div
       className={`monthly-budget-card ${
-        budgetExceeded ? "budget-exceeded" : ""
+        budgetExceeded
+          ? "budget-exceeded"
+          : ""
       }`}
     >
       <div className="monthly-budget-header">
@@ -86,7 +105,9 @@ function MonthlyBudget({
             value={monthlyLimit || ""}
             placeholder="Enter monthly limit"
             onChange={(event) =>
-              changeMonthlyLimit(event.target.value)
+              changeMonthlyLimit(
+                event.target.value
+              )
             }
           />
         </div>
@@ -95,22 +116,31 @@ function MonthlyBudget({
       <div className="budget-details">
         <div>
           <small>Expense</small>
-          <strong>¥{monthlyExpense.toLocaleString()}</strong>
+
+          <strong>
+            {formatCurrency(monthlyExpense)}
+          </strong>
         </div>
 
         <div>
           <small>Limit</small>
-          <strong>¥{monthlyLimit.toLocaleString()}</strong>
+
+          <strong>
+            {formatCurrency(monthlyLimit)}
+          </strong>
         </div>
 
         <div>
           <small>
-            {budgetExceeded ? "Over Budget" : "Remaining"}
+            {budgetExceeded
+              ? "Over Budget"
+              : "Remaining"}
           </small>
 
           <strong>
-            
-            ¥{Math.abs(remainingBudget).toLocaleString()}
+            {formatCurrency(
+              Math.abs(remainingBudget)
+            )}
           </strong>
         </div>
       </div>
@@ -120,21 +150,28 @@ function MonthlyBudget({
           <div className="budget-progress">
             <div
               className="budget-progress-bar"
-              style={{ width: `${usedPercentage}%` }}
+              style={{
+                width: `${usedPercentage}%`,
+              }}
             />
           </div>
 
           <p className="budget-message">
             {budgetExceeded
-              ? `⚠️ Budget exceeded by ¥${Math.abs(
-                  remainingBudget
-                ).toLocaleString()}`
-              : `${usedPercentage.toFixed(1)}% of the budget used`}
+              ? `⚠️ Budget exceeded by ${formatCurrency(
+                  Math.abs(
+                    remainingBudget
+                  )
+                )}`
+              : `${usedPercentage.toFixed(
+                  1
+                )}% of the budget used`}
           </p>
         </>
       ) : (
         <p className="budget-message">
-          Enter your expense limit for {activeMonth}.
+          Enter your expense limit for{" "}
+          {activeMonth}.
         </p>
       )}
     </div>

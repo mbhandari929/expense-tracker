@@ -4,11 +4,22 @@ type SummaryCardProps = {
   className?: string;
 };
 
-function SummaryCard({ title, amount, className = "" }: SummaryCardProps) {
+function formatCurrency(amount: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(amount);
+}
+
+function SummaryCard({
+  title,
+  amount,
+  className = "",
+}: SummaryCardProps) {
   return (
     <div className={`summary-card ${className}`}>
       <h3>{title}</h3>
-     <p>¥{amount.toLocaleString()}</p>
+      <p>{formatCurrency(amount)}</p>
     </div>
   );
 }

@@ -17,6 +17,8 @@ type Item = {
   id: string;
   text: string;
   amount: number;
+
+  
   date: string;
   type: TransactionType;
 };
@@ -360,35 +362,58 @@ function App() {
 
     reader.readAsText(file);
   };
+const monthlyReport = useMemo(() => {
+  return allItems.reduce(
+    (report, item) => {
+      const month = item.date.slice(0, 7);
 
-  return (
-    <div className={darkMode ? "app dark" : "app"}>
-      <Header darkMode={darkMode} setDarkMode={setDarkMode} />
+      if (!report[month]) {
+        report[month] = {
+          income: 0,
+          expense: 0,
+        };
+      }
 
-      <div className="top-controls">
-       <OpeningBalanceField
-  value={openingBalance}
-  onChange={setOpeningBalance}
-/>
-        <select
-          value={selectedMonth}
-          onChange={(event) => setSelectedMonth(event.target.value)}
-        >
-          <option value="all">All Months</option>
-          {months.map((month) => (
-            <option key={month} value={month}>
-              {month}
-            </option>
-          ))}
-        </select>
+      if (item.type === "income") {
+        report[month].income += item.amount;
+      } else {
+        report[month].expense += item.amount;
+      }
 
-        <input
-          type="text"
-          placeholder="Search source..."
-          value={searchText}
-          onChange={(event) => setSearchText(event.target.value)}
-        />
-      </div>
+      return report;
+    },
+    {} as Record<string, { income: number; expense: number }>
+  );
+}, [allItems]);
+
+return (
+  <div className={darkMode ? "app dark" : "app"}>
+    <Header darkMode={darkMode} setDarkMode={setDarkMode} />
+
+    <div className="top-controls">
+      <OpeningBalanceField
+        value={openingBalance}
+        onChange={setOpeningBalance}
+      />
+      <select
+        value={selectedMonth}
+        onChange={(event) => setSelectedMonth(event.target.value)}
+      >
+        <option value="all">All Months</option>
+        {months.map((month) => (
+          <option key={month} value={month}>
+            {month}
+          </option>
+        ))}
+      </select>
+
+      <input
+        type="text"
+        placeholder="Search source..."
+        value={searchText}
+        onChange={(event) => setSearchText(event.target.value)}
+      />
+    </div>
 
       <div className="summary-area">
         <SummaryCard title="Opening Balance" amount={openingBalance} />
@@ -448,13 +473,11 @@ function App() {
 
 
       <TransactionStatement
-        {...({
-          transactions: filteredTransactions,
-          onEdit: editTransaction,
-          onDelete: deleteTransaction,
-        } as any)}
-      />
-
+  items={filteredTransactions}
+  report={monthlyReport}
+  onEdit={editTransaction}
+  onDelete={deleteTransaction}
+/> 
       <TransactionChart data={chartData} />
 
 

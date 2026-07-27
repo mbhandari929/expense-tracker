@@ -1,4 +1,4 @@
-import ActionButtons from "./ActionButtons";
+import StatementActionButtons from "./StatementActionButtons";
 import { formatCurrency } from "../utils/currency";
 
 export type TransactionItem = {
@@ -47,7 +47,7 @@ function StatementRow({
         {formatCurrency(item.amount)}
       </span>
 
-      <ActionButtons
+      <StatementActionButtons
         onEdit={() => onEdit(item)}
         onDelete={() => onDelete(item)}
       />
