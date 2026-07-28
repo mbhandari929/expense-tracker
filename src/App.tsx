@@ -404,30 +404,32 @@ function App() {
 
     reader.readAsText(file);
   };
-  const monthlyReport = useMemo(() => {
-    return allItems.reduce(
-      (report, item) => {
-        const month = item.date.slice(0, 7);
+const monthlyReport = useMemo(() => {
+  return allItems.reduce<
+    Record<string, { income: number; expense: number; balance: number }>
+  >((report, item) => {
+    const month = item.date.slice(0, 7);
 
-        if (!report[month]) {
-          report[month] = {
-            income: 0,
-            expense: 0,
-          };
-        }
+    if (!report[month]) {
+      report[month] = {
+        income: 0,
+        expense: 0,
+        balance: 0,
+      };
+    }
 
-        if (item.type === "income") {
-          report[month].income += item.amount;
-        } else {
-          report[month].expense += item.amount;
-        }
+    if (item.type === "income") {
+      report[month].income += item.amount;
+    } else {
+      report[month].expense += item.amount;
+    }
 
-        return report;
-      },
-      {} as Record<string, { income: number; expense: number }>
-    );
-  }, [allItems]);
+    report[month].balance =
+      report[month].income - report[month].expense;
 
+    return report;
+  }, {});
+}, [allItems]);
   return (
     <div className={darkMode ? "app dark" : "app"}>
       <Header darkMode={darkMode} setDarkMode={setDarkMode} />
