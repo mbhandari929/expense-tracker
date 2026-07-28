@@ -37,7 +37,13 @@ function TransactionForm({
 }: TransactionFormProps) {
   return (
     <div className="source-area compact-area single-transaction-area">
-      <div className="transaction-form-card">
+      <form
+        className="transaction-form-card"
+        onSubmit={(event) => {
+          event.preventDefault();
+          onSubmit();
+        }}
+      >
         <h2>{isEditing ? "Edit Transaction" : "Add Transaction"}</h2>
 
         <label htmlFor="transaction-type">Transaction Type</label>
@@ -105,7 +111,7 @@ function TransactionForm({
         />
 
         <div className="transaction-form-actions">
-          <button type="button" onClick={onSubmit}>
+          <button type="submit">
             {isEditing ? "Update Transaction" : "Add Transaction"}
           </button>
 
@@ -115,7 +121,7 @@ function TransactionForm({
             </button>
           )}
         </div>
-      </div>
+      </form>
     </div>
   );
 }

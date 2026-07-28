@@ -8,7 +8,6 @@ import OpeningBalanceField from "./components/OpeningBalanceField";
 import TransactionChart from "./components/TransactionChart";
 import TransactionStatement from "./components/TransactionStatement";
 import ActionButtons from "./components/ActionButtons";
-// Recharts imports removed (not used in this file). TransactionChart component handles chart rendering.
 import "./App.css";
 
 
@@ -99,12 +98,14 @@ function App() {
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
   const [darkMode, setDarkMode] = useState(false);
 
-  const [openingBalance, setOpeningBalance] = useState<number>(() => {
-    const savedOpeningBalance = loadJson<string | null>("openingBalance", null);
-    return savedOpeningBalance ? Number(savedOpeningBalance) : 0;
-  });
+ const [openingBalance, setOpeningBalance] = useState(() =>
+  loadJson<number>("openingBalance", 0)
+);
   useEffect(() => {
-    localStorage.setItem("openingBalance", String(openingBalance));
+    localStorage.setItem(
+      "openingBalance",
+      JSON.stringify(openingBalance)
+    );
   }, [openingBalance]);
 
   const [incomeSources, setIncomeSources] = useState<string[]>(() =>
@@ -225,7 +226,32 @@ function App() {
     name: `${item.type === "income" ? "Income" : "Expense"} - ${item.source}`,
     total: item.total,
   }));
+const monthlyReport = useMemo(() => {
+  return allItems.reduce<
+    Record<string, { income: number; expense: number; balance: number }>
+  >((report, item) => {
+    const month = item.date.slice(0, 7);
 
+    if (!report[month]) {
+      report[month] = {
+        income: 0,
+        expense: 0,
+        balance: 0,
+      };
+    }
+
+    if (item.type === "income") {
+      report[month].income += item.amount;
+    } else {
+      report[month].expense += item.amount;
+    }
+
+    report[month].balance =
+      report[month].income - report[month].expense;
+
+    return report;
+  }, {});
+}, [allItems]);
 
   const resetForm = () => {
     setTransactionText("");
@@ -390,10 +416,19 @@ function App() {
       try {
         const data = JSON.parse(String(reader.result));
 
-        setIncomes(fixOldData(data.incomes || [], "income"));
-        setExpenses(fixOldData(data.expenses || [], "expense"));
-        setIncomeSources(data.incomeSources || []);
-        setExpenseSources(data.expenseSources || []);
+       const incomes = Array.isArray(data.incomes) ? data.incomes : [];
+const expenses = Array.isArray(data.expenses) ? data.expenses : [];
+
+setIncomes(fixOldData(incomes, "income"));
+setExpenses(fixOldData(expenses, "expense"));
+
+setIncomeSources(
+  Array.isArray(data.incomeSources) ? data.incomeSources : []
+);
+
+setExpenseSources(
+  Array.isArray(data.expenseSources) ? data.expenseSources : []
+);
         setOpeningBalance(Number(data.openingBalance) || 0);
 
         alert("Backup imported successfully!");
@@ -402,34 +437,14 @@ function App() {
       }
     };
 
-    reader.readAsText(file);
+    reader.readAsText(file);``
+
+
+
+
+
+
   };
-const monthlyReport = useMemo(() => {
-  return allItems.reduce<
-    Record<string, { income: number; expense: number; balance: number }>
-  >((report, item) => {
-    const month = item.date.slice(0, 7);
-
-    if (!report[month]) {
-      report[month] = {
-        income: 0,
-        expense: 0,
-        balance: 0,
-      };
-    }
-
-    if (item.type === "income") {
-      report[month].income += item.amount;
-    } else {
-      report[month].expense += item.amount;
-    }
-
-    report[month].balance =
-      report[month].income - report[month].expense;
-
-    return report;
-  }, {});
-}, [allItems]);
 
   return (
     <div className={darkMode ? "app dark" : "app"}>

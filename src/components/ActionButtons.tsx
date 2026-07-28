@@ -1,7 +1,8 @@
+import type { ChangeEvent } from "react";
 type ActionButtonsProps = {
   onExportCSV: () => void;
   onBackupJSON: () => void;
-  onImportJSON: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onImportJSON: (event: ChangeEvent<HTMLInputElement>) => void;
 };
 
 function ActionButtons({

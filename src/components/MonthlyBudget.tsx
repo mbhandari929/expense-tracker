@@ -1,3 +1,4 @@
+import { formatCurrency } from "../utils/currency";
 import { useEffect, useMemo, useState } from "react";
 
 type Expense = {
@@ -12,9 +13,7 @@ type MonthlyBudgetProps = {
 
 type MonthlyBudgets = Record<string, number>;
 
-const formatCurrency = (amount: number) => {
-  return `¥${amount.toLocaleString("en-US")}`;
-};
+
 function MonthlyBudget({
   expenses,
   selectedMonth,
