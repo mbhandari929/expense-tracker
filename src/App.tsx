@@ -430,6 +430,7 @@ const monthlyReport = useMemo(() => {
     return report;
   }, {});
 }, [allItems]);
+
   return (
     <div className={darkMode ? "app dark" : "app"}>
       <Header darkMode={darkMode} setDarkMode={setDarkMode} />
