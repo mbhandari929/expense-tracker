@@ -184,20 +184,36 @@ button:hover {
 
 /* Summary cards */
 
-.summary-area {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
-  margin-bottom: 18px;
+.monthly-summary-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 20px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
 }
 
-.summary-card {
-  min-width: 0;
-  min-height: 138px;
-  padding: 20px;
-  border-radius: 18px;
-  background: #ffffff;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.07);
+.monthly-summary-row strong {
+  min-width: 90px;
+}
+
+.monthly-summary-row span {
+  flex: 1;
+  min-width: 150px;
+}
+
+@media (max-width: 700px) {
+  .monthly-summary-row {
+    display: block;
+  }
+
+  .monthly-summary-row strong,
+  .monthly-summary-row span {
+    display: block;
+    margin-bottom: 6px;
+  }
 }
 
 .summary-card h3 {
