@@ -437,7 +437,7 @@ setExpenseSources(
       }
     };
 
-    reader.readAsText(file);``
+    reader.readAsText(file);
 
 
 
