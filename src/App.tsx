@@ -10,7 +10,6 @@ import TransactionStatement from "./components/TransactionStatement";
 import ActionButtons from "./components/ActionButtons";
 import "./App.css";
 
-
 type TransactionType = "income" | "expense";
 
 type Item = {
@@ -18,54 +17,35 @@ type Item = {
   text: string;
   amount: number;
 
-
   date: string;
   type: TransactionType;
 };
 
-
 const createId = () => crypto.randomUUID();
 
-const isRecord = (
-  value: unknown
-): value is Record<string, unknown> => {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    !Array.isArray(value)
-  );
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 };
 
-const fixOldData = (
-  items: unknown[],
-  type: TransactionType
-): Item[] => {
-  return items
-    .filter(isRecord)
-    .map((item) => {
-      const amount = Number(item.amount);
+const fixOldData = (items: unknown[], type: TransactionType): Item[] => {
+  return items.filter(isRecord).map((item) => {
+    const amount = Number(item.amount);
 
-      return {
-        id:
-          typeof item.id === "string" && item.id
-            ? item.id
-            : createId(),
+    return {
+      id: typeof item.id === "string" && item.id ? item.id : createId(),
 
-        text:
-          typeof item.text === "string"
-            ? item.text
-            : "",
+      text: typeof item.text === "string" ? item.text : "",
 
-        amount: Number.isFinite(amount) ? amount : 0,
+      amount: Number.isFinite(amount) ? amount : 0,
 
-        date:
-          typeof item.date === "string" && item.date
-            ? item.date
-            : new Date().toISOString().slice(0, 10),
+      date:
+        typeof item.date === "string" && item.date
+          ? item.date
+          : new Date().toISOString().slice(0, 10),
 
-        type,
-      };
-    });
+      type,
+    };
+  });
 };
 function loadJson<T>(key: string, fallback: T): T {
   try {
@@ -82,7 +62,7 @@ function App() {
   const [transactionText, setTransactionText] = useState("");
   const [transactionAmount, setTransactionAmount] = useState("");
   const [transactionDate, setTransactionDate] = useState(
-    new Date().toISOString().slice(0, 10)
+    new Date().toISOString().slice(0, 10),
   );
   const [newSource, setNewSource] = useState("");
   const [editId, setEditId] = useState<string | null>(null);
@@ -91,48 +71,35 @@ function App() {
   const getCurrentMonth = () => {
     const today = new Date();
 
-    return `${today.getFullYear()}-${String(
-      today.getMonth() + 1
-    ).padStart(2, "0")}`;
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(
+      2,
+      "0",
+    )}`;
   };
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
   const [darkMode, setDarkMode] = useState(false);
 
- const [openingBalance, setOpeningBalance] = useState(() =>
-  loadJson<number>("openingBalance", 0)
-);
+  const [openingBalance, setOpeningBalance] = useState(() =>
+    loadJson<number>("openingBalance", 0),
+  );
   useEffect(() => {
-    localStorage.setItem(
-      "openingBalance",
-      JSON.stringify(openingBalance)
-    );
+    localStorage.setItem("openingBalance", JSON.stringify(openingBalance));
   }, [openingBalance]);
 
   const [incomeSources, setIncomeSources] = useState<string[]>(() =>
-    loadJson("incomeSources", ["Salary", "Bonus", "Other"])
+    loadJson("incomeSources", ["Salary", "Bonus", "Other"]),
   );
 
   const [expenseSources, setExpenseSources] = useState<string[]>(() =>
-    loadJson("expenseSources", [
-      "Food",
-      "Rent",
-      "Transport",
-      "Other",
-    ])
+    loadJson("expenseSources", ["Food", "Rent", "Transport", "Other"]),
   );
 
   const [incomes, setIncomes] = useState<Item[]>(() =>
-    fixOldData(
-      loadJson<unknown[]>("incomes", []),
-      "income"
-    )
+    fixOldData(loadJson<unknown[]>("incomes", []), "income"),
   );
 
   const [expenses, setExpenses] = useState<Item[]>(() =>
-    fixOldData(
-      loadJson<unknown[]>("expenses", []),
-      "expense"
-    )
+    fixOldData(loadJson<unknown[]>("expenses", []), "expense"),
   );
   useEffect(() => {
     localStorage.setItem("incomes", JSON.stringify(incomes));
@@ -150,11 +117,9 @@ function App() {
     localStorage.setItem("expenseSources", JSON.stringify(expenseSources));
   }, [expenseSources]);
 
-
-
   const allItems = useMemo(
     () => [...incomes, ...expenses],
-    [incomes, expenses]
+    [incomes, expenses],
   );
 
   const availableSources =
@@ -175,33 +140,31 @@ function App() {
       return allItems;
     }
 
-    return allItems.filter(
-      (item) => item.date.slice(0, 7) === selectedMonth
-    );
+    return allItems.filter((item) => item.date.slice(0, 7) === selectedMonth);
   }, [allItems, selectedMonth]);
   const monthFilteredIncomes = monthFilteredItems.filter(
-    (item) => item.type === "income"
+    (item) => item.type === "income",
   );
 
   const monthFilteredExpenses = monthFilteredItems.filter(
-    (item) => item.type === "expense"
+    (item) => item.type === "expense",
   );
 
   const totalIncome = monthFilteredIncomes.reduce(
     (sum, item) => sum + item.amount,
-    0
+    0,
   );
 
   const totalExpense = monthFilteredExpenses.reduce(
     (sum, item) => sum + item.amount,
-    0
+    0,
   );
 
   const balance = openingBalance + totalIncome - totalExpense;
 
   const filteredTransactions = [...monthFilteredItems]
     .filter((item) =>
-      item.text.toLowerCase().includes(searchText.toLowerCase())
+      item.text.toLowerCase().includes(searchText.toLowerCase()),
     )
     .sort((a, b) => b.date.localeCompare(a.date));
 
@@ -226,32 +189,31 @@ function App() {
     name: `${item.type === "income" ? "Income" : "Expense"} - ${item.source}`,
     total: item.total,
   }));
-const monthlyReport = useMemo(() => {
-  return allItems.reduce<
-    Record<string, { income: number; expense: number; balance: number }>
-  >((report, item) => {
-    const month = item.date.slice(0, 7);
+  const monthlyReport = useMemo(() => {
+    return allItems.reduce<
+      Record<string, { income: number; expense: number; balance: number }>
+    >((report, item) => {
+      const month = item.date.slice(0, 7);
 
-    if (!report[month]) {
-      report[month] = {
-        income: 0,
-        expense: 0,
-        balance: 0,
-      };
-    }
+      if (!report[month]) {
+        report[month] = {
+          income: 0,
+          expense: 0,
+          balance: 0,
+        };
+      }
 
-    if (item.type === "income") {
-      report[month].income += item.amount;
-    } else {
-      report[month].expense += item.amount;
-    }
+      if (item.type === "income") {
+        report[month].income += item.amount;
+      } else {
+        report[month].expense += item.amount;
+      }
 
-    report[month].balance =
-      report[month].income - report[month].expense;
+      report[month].balance = report[month].income - report[month].expense;
 
-    return report;
-  }, {});
-}, [allItems]);
+      return report;
+    }, {});
+  }, [allItems]);
 
   const resetForm = () => {
     setTransactionText("");
@@ -289,7 +251,6 @@ const monthlyReport = useMemo(() => {
       if (!originalItem) return;
 
       const updatedItem: Item = {
-
         ...originalItem,
         date: transactionDate,
         text,
@@ -299,7 +260,7 @@ const monthlyReport = useMemo(() => {
 
       setIncomes((currentIncomes) => {
         const withoutEditedItem = currentIncomes.filter(
-          (item) => item.id !== editId
+          (item) => item.id !== editId,
         );
 
         return transactionType === "income"
@@ -309,7 +270,7 @@ const monthlyReport = useMemo(() => {
 
       setExpenses((currentExpenses) => {
         const withoutEditedItem = currentExpenses.filter(
-          (item) => item.id !== editId
+          (item) => item.id !== editId,
         );
 
         return transactionType === "expense"
@@ -336,7 +297,6 @@ const monthlyReport = useMemo(() => {
   };
 
   const editTransaction = (item: Item) => {
-
     setTransactionType(item.type);
     setTransactionText(item.text);
     setTransactionAmount(String(item.amount));
@@ -347,11 +307,11 @@ const monthlyReport = useMemo(() => {
   const deleteTransaction = (item: Item) => {
     if (item.type === "income") {
       setIncomes((currentIncomes) =>
-        currentIncomes.filter((income) => income.id !== item.id)
+        currentIncomes.filter((income) => income.id !== item.id),
       );
     } else {
       setExpenses((currentExpenses) =>
-        currentExpenses.filter((expense) => expense.id !== item.id)
+        currentExpenses.filter((expense) => expense.id !== item.id),
       );
     }
 
@@ -416,19 +376,19 @@ const monthlyReport = useMemo(() => {
       try {
         const data = JSON.parse(String(reader.result));
 
-       const incomes = Array.isArray(data.incomes) ? data.incomes : [];
-const expenses = Array.isArray(data.expenses) ? data.expenses : [];
+        const incomes = Array.isArray(data.incomes) ? data.incomes : [];
+        const expenses = Array.isArray(data.expenses) ? data.expenses : [];
 
-setIncomes(fixOldData(incomes, "income"));
-setExpenses(fixOldData(expenses, "expense"));
+        setIncomes(fixOldData(incomes, "income"));
+        setExpenses(fixOldData(expenses, "expense"));
 
-setIncomeSources(
-  Array.isArray(data.incomeSources) ? data.incomeSources : []
-);
+        setIncomeSources(
+          Array.isArray(data.incomeSources) ? data.incomeSources : [],
+        );
 
-setExpenseSources(
-  Array.isArray(data.expenseSources) ? data.expenseSources : []
-);
+        setExpenseSources(
+          Array.isArray(data.expenseSources) ? data.expenseSources : [],
+        );
         setOpeningBalance(Number(data.openingBalance) || 0);
 
         alert("Backup imported successfully!");
@@ -438,12 +398,6 @@ setExpenseSources(
     };
 
     reader.readAsText(file);
-
-
-
-
-
-
   };
 
   return (
@@ -489,10 +443,7 @@ setExpenseSources(
         />
         <SummaryCard title="Balance" amount={balance} className="balance" />
       </div>
-      <MonthlyBudget
-        expenses={expenses}
-        selectedMonth={selectedMonth}
-      />
+      <MonthlyBudget expenses={expenses} selectedMonth={selectedMonth} />
       <ActionButtons
         onExportCSV={exportCSV}
         onBackupJSON={exportJSON}
@@ -520,7 +471,6 @@ setExpenseSources(
         onCancel={resetForm}
       />
 
-
       <TransactionStatement
         items={filteredTransactions}
         report={monthlyReport}
@@ -528,9 +478,6 @@ setExpenseSources(
         onDelete={deleteTransaction}
       />
       <TransactionChart data={chartData} />
-
-
-
     </div>
   );
 }
