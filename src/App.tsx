@@ -1,7 +1,7 @@
 import MonthlyBudget from "./components/MonthlyBudget";
 import Header from "./components/Header";
 import SummaryCard from "./components/SummaryCard";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import type { ChangeEvent } from "react";
 import TransactionForm from "./components/TransactionForm";
 import OpeningBalanceField from "./components/OpeningBalanceField";
@@ -11,6 +11,7 @@ import ActionButtons from "./components/ActionButtons";
 import type { Item, TransactionType } from "./types/transaction";
 import { fixOldData, } from "./utils/storage";
 import { useExpenseData } from "./hooks/useExpenseData";
+import { useTransactionSummary } from "./hooks/useTransactionSummary";
 import "./App.css";
 
 const API_URL = "http://localhost:3000";
@@ -79,11 +80,25 @@ function App() {
 
     void loadTransactions();
   }, [setIncomes, setExpenses]);
+ const {
+  allItems,
+  months,
+  totalIncome,
+  totalExpense,
+  balance,
+  filteredTransactions,
+  chartData,
+  monthlyReport,
+} = useTransactionSummary({
+  incomes,
+  expenses,
+  incomeSources,
+  expenseSources,
+  openingBalance,
+  selectedMonth,
+  searchText,
+});
  
-  const allItems = useMemo(
-    () => [...incomes, ...expenses],
-    [incomes, expenses],
-  );
 
   const availableSources =
     transactionType === "income" ? incomeSources : expenseSources;
@@ -93,91 +108,15 @@ function App() {
       ? [transactionText, ...availableSources]
       : availableSources;
 
-  const months = useMemo(() => {
-    const monthList = allItems.map((item) => item.date.slice(0, 7));
-    return Array.from(new Set(monthList)).sort().reverse();
-  }, [allItems]);
+  
 
-  const monthFilteredItems = useMemo(() => {
-    if (selectedMonth === "all") {
-      return allItems;
-    }
 
-    return allItems.filter((item) => item.date.slice(0, 7) === selectedMonth);
-  }, [allItems, selectedMonth]);
-  const monthFilteredIncomes = monthFilteredItems.filter(
-    (item) => item.type === "income",
-  );
-
-  const monthFilteredExpenses = monthFilteredItems.filter(
-    (item) => item.type === "expense",
-  );
-
-  const totalIncome = monthFilteredIncomes.reduce(
-    (sum, item) => sum + item.amount,
-    0,
-  );
-
-  const totalExpense = monthFilteredExpenses.reduce(
-    (sum, item) => sum + item.amount,
-    0,
-  );
-
-  const balance = openingBalance + totalIncome - totalExpense;
-
-  const filteredTransactions = [...monthFilteredItems]
-    .filter((item) =>
-      item.text.toLowerCase().includes(searchText.toLowerCase()),
-    )
-    .sort((a, b) => b.date.localeCompare(a.date));
-
-  const transactionReport = [
-    ...incomeSources.map((source) => ({
-      type: "income" as const,
-      source,
-      total: monthFilteredIncomes
-        .filter((item) => item.text === source)
-        .reduce((sum, item) => sum + item.amount, 0),
-    })),
-    ...expenseSources.map((source) => ({
-      type: "expense" as const,
-      source,
-      total: monthFilteredExpenses
-        .filter((item) => item.text === source)
-        .reduce((sum, item) => sum + item.amount, 0),
-    })),
-  ].filter((item) => item.total > 0);
-
-  const chartData = transactionReport.map((item) => ({
-    name: `${item.type === "income" ? "Income" : "Expense"} - ${item.source}`,
-    total: item.total,
-  }));
-  const monthlyReport = useMemo(() => {
-    return allItems.reduce<
-      Record<string, { income: number; expense: number; balance: number }>
-    >((report, item) => {
-      const month = item.date.slice(0, 7);
-
-      if (!report[month]) {
-        report[month] = {
-          income: 0,
-          expense: 0,
-          balance: 0,
-        };
-      }
-
-      if (item.type === "income") {
-        report[month].income += item.amount;
-      } else {
-        report[month].expense += item.amount;
-      }
-
-      report[month].balance = report[month].income - report[month].expense;
-
-      return report;
-    }, {});
-  }, [allItems]);
-
+  
+  
+  
+    
+   
+ 
   const resetForm = () => {
     setTransactionText("");
     setTransactionAmount("");
