@@ -8,57 +8,26 @@ import OpeningBalanceField from "./components/OpeningBalanceField";
 import TransactionChart from "./components/TransactionChart";
 import TransactionStatement from "./components/TransactionStatement";
 import ActionButtons from "./components/ActionButtons";
+import type { Item, TransactionType } from "./types/transaction";
+import { fixOldData, } from "./utils/storage";
+import { useExpenseData } from "./hooks/useExpenseData";
 import "./App.css";
 
-type TransactionType = "income" | "expense";
-
-type Item = {
-  id: string;
-  text: string;
-  amount: number;
-
-  date: string;
-  type: TransactionType;
-};
-
-const createId = () => crypto.randomUUID();
 const API_URL = "http://localhost:3000";
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-};
 
-const fixOldData = (items: unknown[], type: TransactionType): Item[] => {
-  return items.filter(isRecord).map((item) => {
-    const amount = Number(item.amount);
-
-    return {
-      id:
-  typeof item.id === "string" || typeof item.id === "number"
-    ? String(item.id)
-    : createId(),
-      text: typeof item.text === "string" ? item.text : "",
-
-      amount: Number.isFinite(amount) ? amount : 0,
-
-      date:
-        typeof item.date === "string" && item.date
-          ? item.date
-          : new Date().toISOString().slice(0, 10),
-
-      type,
-    };
-  });
-};
-function loadJson<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key);
-
-    return raw ? (JSON.parse(raw) as T) : fallback;
-  } catch {
-    return fallback;
-  }
-}
 function App() {
+   const {
+    openingBalance,
+    setOpeningBalance,
+    incomeSources,
+    setIncomeSources,
+    expenseSources,
+    setExpenseSources,
+    incomes,
+    setIncomes,
+    expenses,
+    setExpenses,
+  } = useExpenseData();
   const [transactionType, setTransactionType] =
     useState<TransactionType>("income");
   const [transactionText, setTransactionText] = useState("");
@@ -81,73 +50,36 @@ function App() {
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
   const [darkMode, setDarkMode] = useState(false);
 
-  const [openingBalance, setOpeningBalance] = useState(() =>
-    loadJson<number>("openingBalance", 0),
-  );
   useEffect(() => {
-    localStorage.setItem("openingBalance", JSON.stringify(openingBalance));
-  }, [openingBalance]);
+    const loadTransactions = async () => {
+      try {
+        const [incomeResponse, expenseResponse] = await Promise.all([
+          fetch(`${API_URL}/income`),
+          fetch(`${API_URL}/expense`),
+        ]);
 
-  const [incomeSources, setIncomeSources] = useState<string[]>(() =>
-    loadJson("incomeSources", ["Salary", "Bonus", "Other"]),
-  );
+        if (!incomeResponse.ok || !expenseResponse.ok) {
+          throw new Error("Failed to load transactions");
+        }
 
-  const [expenseSources, setExpenseSources] = useState<string[]>(() =>
-    loadJson("expenseSources", ["Food", "Rent", "Transport", "Other"]),
-  );
+        const incomeData: unknown = await incomeResponse.json();
+        const expenseData: unknown = await expenseResponse.json();
 
-  const [incomes, setIncomes] = useState<Item[]>(() =>
-    fixOldData(loadJson<unknown[]>("incomes", []), "income"),
-  );
+        setIncomes(
+          fixOldData(Array.isArray(incomeData) ? incomeData : [], "income"),
+        );
 
-  const [expenses, setExpenses] = useState<Item[]>(() =>
-    fixOldData(loadJson<unknown[]>("expenses", []), "expense"),
-  );
-  useEffect(() => {
-  const loadTransactions = async () => {
-    try {
-      const [incomeResponse, expenseResponse] = await Promise.all([
-        fetch(`${API_URL}/income`),
-        fetch(`${API_URL}/expense`),
-      ]);
-
-      if (!incomeResponse.ok || !expenseResponse.ok) {
-        throw new Error("Failed to load transactions");
+        setExpenses(
+          fixOldData(Array.isArray(expenseData) ? expenseData : [], "expense"),
+        );
+      } catch (error) {
+        console.error("Backend data load failed:", error);
       }
+    };
 
-      const incomeData: unknown = await incomeResponse.json();
-      const expenseData: unknown = await expenseResponse.json();
-
-      setIncomes(
-        fixOldData(Array.isArray(incomeData) ? incomeData : [], "income"),
-      );
-
-      setExpenses(
-        fixOldData(Array.isArray(expenseData) ? expenseData : [], "expense"),
-      );
-    } catch (error) {
-      console.error("Backend data load failed:", error);
-    }
-  };
-
-  void loadTransactions();
-}, []);
-  useEffect(() => {
-    localStorage.setItem("incomes", JSON.stringify(incomes));
-  }, [incomes]);
-
-  useEffect(() => {
-    localStorage.setItem("expenses", JSON.stringify(expenses));
-  }, [expenses]);
-
-  useEffect(() => {
-    localStorage.setItem("incomeSources", JSON.stringify(incomeSources));
-  }, [incomeSources]);
-
-  useEffect(() => {
-    localStorage.setItem("expenseSources", JSON.stringify(expenseSources));
-  }, [expenseSources]);
-
+    void loadTransactions();
+  }, [setIncomes, setExpenses]);
+ 
   const allItems = useMemo(
     () => [...incomes, ...expenses],
     [incomes, expenses],
@@ -278,98 +210,98 @@ function App() {
     if (text === "" || transactionAmount === "" || amount <= 0) return;
 
     if (editId) {
-  const originalItem = allItems.find((item) => item.id === editId);
-  if (!originalItem) return;
+      const originalItem = allItems.find((item) => item.id === editId);
+      if (!originalItem) return;
 
-  try {
-    const response = await fetch(
-      `${API_URL}/${originalItem.type}/${editId}`,
-      {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      try {
+        const response = await fetch(
+          `${API_URL}/${originalItem.type}/${editId}`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              text,
+              amount,
+              date: transactionDate,
+            }),
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to update transaction");
+        }
+
+        const updatedItem: Item = {
+          ...originalItem,
           text,
           amount,
           date: transactionDate,
-        }),
-      },
-    );
+        };
 
-    if (!response.ok) {
-      throw new Error("Failed to update transaction");
-    }
-
-    const updatedItem: Item = {
-      ...originalItem,
-      text,
-      amount,
-      date: transactionDate,
-    };
-
-    if (originalItem.type === "income") {
-      setIncomes((currentIncomes) =>
-        currentIncomes.map((item) =>
-          item.id === editId ? updatedItem : item,
-        ),
-      );
+        if (originalItem.type === "income") {
+          setIncomes((currentIncomes) =>
+            currentIncomes.map((item) =>
+              item.id === editId ? updatedItem : item,
+            ),
+          );
+        } else {
+          setExpenses((currentExpenses) =>
+            currentExpenses.map((item) =>
+              item.id === editId ? updatedItem : item,
+            ),
+          );
+        }
+      } catch (error) {
+        console.error("Transaction update failed:", error);
+        alert("Transaction could not be updated.");
+        return;
+      }
     } else {
-      setExpenses((currentExpenses) =>
-        currentExpenses.map((item) =>
-          item.id === editId ? updatedItem : item,
-        ),
-      );
+      try {
+        const response = await fetch(`${API_URL}/${transactionType}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            text,
+            amount,
+            date: transactionDate,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to save transaction");
+        }
+
+        const savedData: {
+          id: number | string;
+          text: string;
+          amount: number;
+          date: string;
+        } = await response.json();
+
+        const newItem: Item = {
+          id: String(savedData.id),
+          text: savedData.text,
+          amount: Number(savedData.amount),
+          date: savedData.date,
+          type: transactionType,
+        };
+
+        if (transactionType === "income") {
+          setIncomes((currentIncomes) => [...currentIncomes, newItem]);
+        } else {
+          setExpenses((currentExpenses) => [...currentExpenses, newItem]);
+        }
+      } catch (error) {
+        console.error("Transaction save failed:", error);
+        alert("Transaction could not be saved.");
+        return;
+      }
     }
-  } catch (error) {
-    console.error("Transaction update failed:", error);
-    alert("Transaction could not be updated.");
-    return;
-  }
-} else {
-  try {
-    const response = await fetch(`${API_URL}/${transactionType}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        text,
-        amount,
-        date: transactionDate,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error("Failed to save transaction");
-    }
-
-    const savedData: {
-      id: number | string;
-      text: string;
-      amount: number;
-      date: string;
-    } = await response.json();
-
-    const newItem: Item = {
-      id: String(savedData.id),
-      text: savedData.text,
-      amount: Number(savedData.amount),
-      date: savedData.date,
-      type: transactionType,
-    };
-
-    if (transactionType === "income") {
-      setIncomes((currentIncomes) => [...currentIncomes, newItem]);
-    } else {
-      setExpenses((currentExpenses) => [...currentExpenses, newItem]);
-    }
-  } catch (error) {
-    console.error("Transaction save failed:", error);
-    alert("Transaction could not be saved.");
-    return;
-  }
-}
 
     resetForm();
   };
@@ -382,43 +314,38 @@ function App() {
     setEditId(item.id);
   };
 
- const deleteTransaction = async (item: Item) => {
-  const shouldDelete = window.confirm(
-    `Delete "${item.text}" transaction?`,
-  );
+  const deleteTransaction = async (item: Item) => {
+    const shouldDelete = window.confirm(`Delete "${item.text}" transaction?`);
 
-  if (!shouldDelete) return;
+    if (!shouldDelete) return;
 
-  try {
-    const response = await fetch(
-      `${API_URL}/${item.type}/${item.id}`,
-      {
+    try {
+      const response = await fetch(`${API_URL}/${item.type}/${item.id}`, {
         method: "DELETE",
-      },
-    );
+      });
 
-    if (!response.ok) {
-      throw new Error("Failed to delete transaction");
-    }
+      if (!response.ok) {
+        throw new Error("Failed to delete transaction");
+      }
 
-    if (item.type === "income") {
-      setIncomes((currentIncomes) =>
-        currentIncomes.filter((income) => income.id !== item.id),
-      );
-    } else {
-      setExpenses((currentExpenses) =>
-        currentExpenses.filter((expense) => expense.id !== item.id),
-      );
-    }
+      if (item.type === "income") {
+        setIncomes((currentIncomes) =>
+          currentIncomes.filter((income) => income.id !== item.id),
+        );
+      } else {
+        setExpenses((currentExpenses) =>
+          currentExpenses.filter((expense) => expense.id !== item.id),
+        );
+      }
 
-    if (editId === item.id) {
-      resetForm();
+      if (editId === item.id) {
+        resetForm();
+      }
+    } catch (error) {
+      console.error("Transaction delete failed:", error);
+      alert("Transaction could not be deleted.");
     }
-  } catch (error) {
-    console.error("Transaction delete failed:", error);
-    alert("Transaction could not be deleted.");
-  }
-};
+  };
 
   const exportCSV = () => {
     const rows = [
