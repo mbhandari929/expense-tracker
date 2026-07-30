@@ -14,13 +14,20 @@ export const fixOldData = (
     const amount = Number(item.amount);
 
     return {
-      id: typeof item.id === "string" && item.id ? item.id : createId(),
+      id:
+        typeof item.id === "string" || typeof item.id === "number"
+          ? String(item.id)
+          : createId(),
+
       text: typeof item.text === "string" ? item.text : "",
+
       amount: Number.isFinite(amount) ? amount : 0,
+
       date:
         typeof item.date === "string" && item.date
           ? item.date
           : new Date().toISOString().slice(0, 10),
+
       type,
     };
   });
