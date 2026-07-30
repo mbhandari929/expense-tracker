@@ -1,13 +1,12 @@
 import MonthlyBudget from "./components/MonthlyBudget";
 import Header from "./components/Header";
 import SummaryCard from "./components/SummaryCard";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import TransactionForm from "./components/TransactionForm";
 import OpeningBalanceField from "./components/OpeningBalanceField";
 import TransactionChart from "./components/TransactionChart";
 import TransactionStatement from "./components/TransactionStatement";
 import ActionButtons from "./components/ActionButtons";
-import { fixOldData, } from "./utils/storage";
 import { useExpenseData } from "./hooks/useExpenseData";
 import { useTransactionSummary } from "./hooks/useTransactionSummary";
 import { useTransactionForm } from "./hooks/useTransactionForm";
@@ -17,7 +16,7 @@ import "./App.css";
 const API_URL = "http://localhost:3000";
 
 function App() {
-   const {
+  const {
     openingBalance,
     setOpeningBalance,
     incomeSources,
@@ -28,48 +27,48 @@ function App() {
     setIncomes,
     expenses,
     setExpenses,
-  } = useExpenseData();
+  } = useExpenseData(API_URL);
   const {
-  transactionType,
-  transactionText,
-  transactionAmount,
-  transactionDate,
-  newSource,
-  editId,
-  sourceOptions,
-  setTransactionText,
-  setTransactionAmount,
-  setTransactionDate,
-  setNewSource,
-  changeTransactionType,
-  resetForm,
-  addSource,
-  saveTransaction,
-  editTransaction,
-  deleteTransaction,
-} = useTransactionForm({
-  apiUrl: API_URL,
-  incomes,
-  expenses,
-  incomeSources,
-  expenseSources,
-  setIncomes,
-  setExpenses,
-  setIncomeSources,
-  setExpenseSources,
-});
-const { exportCSV, exportJSON, importJSON } = useBackup({
-  incomes,
-  expenses,
-  incomeSources,
-  expenseSources,
-  openingBalance,
-  setIncomes,
-  setExpenses,
-  setIncomeSources,
-  setExpenseSources,
-  setOpeningBalance,
-});
+    transactionType,
+    transactionText,
+    transactionAmount,
+    transactionDate,
+    newSource,
+    editId,
+    sourceOptions,
+    setTransactionText,
+    setTransactionAmount,
+    setTransactionDate,
+    setNewSource,
+    changeTransactionType,
+    resetForm,
+    addSource,
+    saveTransaction,
+    editTransaction,
+    deleteTransaction,
+  } = useTransactionForm({
+    apiUrl: API_URL,
+    incomes,
+    expenses,
+    incomeSources,
+    expenseSources,
+    setIncomes,
+    setExpenses,
+    setIncomeSources,
+    setExpenseSources,
+  });
+  const { exportCSV, exportJSON, importJSON } = useBackup({
+    incomes,
+    expenses,
+    incomeSources,
+    expenseSources,
+    openingBalance,
+    setIncomes,
+    setExpenses,
+    setIncomeSources,
+    setExpenseSources,
+    setOpeningBalance,
+  });
   const [searchText, setSearchText] = useState("");
   const getCurrentMonth = () => {
     const today = new Date();
@@ -82,55 +81,25 @@ const { exportCSV, exportJSON, importJSON } = useBackup({
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
   const [darkMode, setDarkMode] = useState(false);
 
-  useEffect(() => {
-    const loadTransactions = async () => {
-      try {
-        const [incomeResponse, expenseResponse] = await Promise.all([
-          fetch(`${API_URL}/income`),
-          fetch(`${API_URL}/expense`),
-        ]);
 
-        if (!incomeResponse.ok || !expenseResponse.ok) {
-          throw new Error("Failed to load transactions");
-        }
+  const {
+    months,
+    totalIncome,
+    totalExpense,
+    balance,
+    filteredTransactions,
+    chartData,
+    monthlyReport,
+  } = useTransactionSummary({
+    incomes,
+    expenses,
+    incomeSources,
+    expenseSources,
+    openingBalance,
+    selectedMonth,
+    searchText,
+  });
 
-        const incomeData: unknown = await incomeResponse.json();
-        const expenseData: unknown = await expenseResponse.json();
-
-        setIncomes(
-          fixOldData(Array.isArray(incomeData) ? incomeData : [], "income"),
-        );
-
-        setExpenses(
-          fixOldData(Array.isArray(expenseData) ? expenseData : [], "expense"),
-        );
-      } catch (error) {
-        console.error("Backend data load failed:", error);
-      }
-    };
-
-    void loadTransactions();
-  }, [setIncomes, setExpenses]);
- const {
-  months,
-  totalIncome,
-  totalExpense,
-  balance,
-  filteredTransactions,
-  chartData,
-  monthlyReport,
-} = useTransactionSummary({
-  incomes,
-  expenses,
-  incomeSources,
-  expenseSources,
-  openingBalance,
-  selectedMonth,
-  searchText,
-});
- 
-
- 
   return (
     <div className={darkMode ? "app dark" : "app"}>
       <Header darkMode={darkMode} setDarkMode={setDarkMode} />

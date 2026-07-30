@@ -11,7 +11,7 @@ const DEFAULT_EXPENSE_SOURCES = [
   "Other",
 ];
 
-export const useExpenseData = () => {
+export const useExpenseData = (apiUrl: string) => {
   const [openingBalance, setOpeningBalance] = useState(() =>
     loadJson<number>("openingBalance", 0),
   );
@@ -57,7 +57,41 @@ export const useExpenseData = () => {
   useEffect(() => {
     localStorage.setItem("expenses", JSON.stringify(expenses));
   }, [expenses]);
+  useEffect(() => {
+    const loadTransactions = async () => {
+      try {
+        const [incomeResponse, expenseResponse] = await Promise.all([
+          fetch(`${apiUrl}/income`),
+          fetch(`${apiUrl}/expense`),
+        ]);
 
+        if (!incomeResponse.ok || !expenseResponse.ok) {
+          throw new Error("Failed to load transactions");
+        }
+
+        const incomeData: unknown = await incomeResponse.json();
+        const expenseData: unknown = await expenseResponse.json();
+
+        setIncomes(
+          fixOldData(
+            Array.isArray(incomeData) ? incomeData : [],
+            "income",
+          ),
+        );
+
+        setExpenses(
+          fixOldData(
+            Array.isArray(expenseData) ? expenseData : [],
+            "expense",
+          ),
+        );
+      } catch (error) {
+        console.error("Backend data load failed:", error);
+      }
+    };
+
+    void loadTransactions();
+  }, [apiUrl]);
   return {
     openingBalance,
     setOpeningBalance,
