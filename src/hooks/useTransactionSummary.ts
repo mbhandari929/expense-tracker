@@ -75,9 +75,7 @@ export const useTransactionSummary = ({
     () =>
       [...monthFilteredItems]
         .filter((item) =>
-          item.text
-            .toLowerCase()
-            .includes(searchText.toLowerCase()),
+          item.text.toLowerCase().includes(searchText.toLowerCase()),
         )
         .sort((a, b) => b.date.localeCompare(a.date)),
     [monthFilteredItems, searchText],
@@ -102,9 +100,9 @@ export const useTransactionSummary = ({
     ].filter((item) => item.total > 0);
 
     return transactionReport.map((item) => ({
-      name: `${
-        item.type === "income" ? "Income" : "Expense"
-      } - ${item.source}`,
+      name: `${item.type === "income" ? "Income" : "Expense"} - ${
+        item.source
+      }`,
       total: item.total,
     }));
   }, [
