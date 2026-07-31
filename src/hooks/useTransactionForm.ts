@@ -1,7 +1,15 @@
 import { useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import type { Item, TransactionType } from "../types/transaction";
+const getTodayLocalDate = () => {
+  const today = new Date();
 
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+};
 type UseTransactionFormProps = {
   apiUrl: string;
   incomes: Item[];
@@ -29,9 +37,8 @@ export const useTransactionForm = ({
     useState<TransactionType>("income");
   const [transactionText, setTransactionText] = useState("");
   const [transactionAmount, setTransactionAmount] = useState("");
-  const [transactionDate, setTransactionDate] = useState(
-    new Date().toISOString().slice(0, 10),
-  );
+  const [transactionDate, setTransactionDate] =
+  useState(getTodayLocalDate);
   const [newSource, setNewSource] = useState("");
   const [editId, setEditId] = useState<string | null>(null);
 
@@ -48,7 +55,7 @@ export const useTransactionForm = ({
   const resetForm = () => {
     setTransactionText("");
     setTransactionAmount("");
-    setTransactionDate(new Date().toISOString().slice(0, 10));
+    setTransactionDate(getTodayLocalDate());
     setNewSource("");
     setEditId(null);
   };
