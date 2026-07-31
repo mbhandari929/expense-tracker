@@ -84,6 +84,7 @@ function App() {
 
   const {
     months,
+    selectedOpeningBalance,
     totalIncome,
     totalExpense,
     balance,
@@ -106,7 +107,7 @@ function App() {
 
       <div className="top-controls">
         <OpeningBalanceField
-          value={openingBalance}
+          value={selectedOpeningBalance}
           onChange={setOpeningBalance}
         />
         <select
@@ -130,7 +131,7 @@ function App() {
       </div>
 
       <div className="summary-area">
-        <SummaryCard title="Opening Balance" amount={openingBalance} />
+        <SummaryCard title="Opening Balance" amount={selectedOpeningBalance} />
         <SummaryCard
           title="Total Income"
           amount={totalIncome}
