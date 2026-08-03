@@ -48,12 +48,14 @@ function TransactionForm({
 
         <label htmlFor="transaction-type">Transaction Type</label>
         <select
-          id="transaction-type"
-          value={type}
-          onChange={(event) =>
-            onTypeChange(event.target.value as TransactionType)
-          }
-        >
+     id="transaction-type"
+    value={type}
+    disabled={isEditing}
+    onChange={(event) =>
+    onTypeChange(event.target.value as TransactionType)
+    }
+ >
+    
           <option value="income">Income</option>
           <option value="expense">Expense</option>
         </select>
