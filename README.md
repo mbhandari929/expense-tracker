@@ -1,73 +1,128 @@
-# React + TypeScript + Vite
+# Expense Tracker App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A React, TypeScript, and Vite application for managing income and expenses.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Add, edit, and delete income and expense transactions
+- View monthly income and expense reports
+- Manage opening and closing balances
+- Set a monthly expense limit
+- Search transactions
+- Export data as CSV
+- Backup and import data as JSON
+- Dark mode
+- Backend API integration
 
-## React Compiler
+## Requirements
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- Node.js
+- npm
+- Expense Tracker backend API
 
-## Expanding the ESLint configuration
+## Frontend Setup
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Install the dependencies:
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Create a `.env` file in the project root:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+```env
+VITE_API_URL=http://localhost:3000
+```
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Start the frontend:
+
+```bash
+npm run dev
+```
+
+The frontend normally runs at:
+
+```text
+http://localhost:5173
+```
+
+## Backend Setup
+
+The backend is maintained in a separate NestJS project and is not included in this repository.
+
+Open the backend project and run:
+
+```bash
+npm install
+npm run start:dev
+```
+
+The backend normally runs at:
+
+```text
+http://localhost:3000
+```
+
+The backend must allow requests from the frontend origin:
+
+```text
+http://localhost:5173
+```
+
+Example NestJS CORS configuration:
+
+```ts
+app.enableCors({
+  origin: "http://localhost:5173",
+  methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type"],
+});
+```
+
+## Running the Application
+
+Start the backend first:
+
+```bash
+npm run start:dev
+```
+
+Then start the frontend in another terminal:
+
+```bash
+npm run dev
+```
+
+Both servers must be running for transaction loading, creation, editing, deletion, and JSON import.
+
+## Data Storage
+
+Income and expense transactions are stored in the backend database.
+
+The following settings are stored in browser localStorage:
+
+- Opening balance
+- Income source options
+- Expense source options
+
+The backend API is the primary data source for transaction data.
+
+## API Endpoints
+
+```text
+GET    /income
+POST   /income
+PATCH  /income/:id
+DELETE /income/:id
+
+GET    /expense
+POST   /expense
+PATCH  /expense/:id
+DELETE /expense/:id
+```
+
+## Production Build
+
+```bash
+npm run build
 ```

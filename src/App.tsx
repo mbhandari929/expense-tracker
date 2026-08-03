@@ -13,7 +13,8 @@ import { useTransactionForm } from "./hooks/useTransactionForm";
 import { useBackup } from "./hooks/useBackup";
 import "./App.css";
 
-const API_URL = "http://localhost:3000";
+const API_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 function App() {
   const {
@@ -25,8 +26,9 @@ function App() {
     setExpenseSources,
     incomes,
     setIncomes,
-    expenses,
-    setExpenses,
+   expenses,
+  setExpenses,
+  apiError,
   } = useExpenseData(API_URL);
   const {
     transactionType,
@@ -58,6 +60,7 @@ function App() {
     setExpenseSources,
   });
   const { exportCSV, exportJSON, importJSON } = useBackup({
+    apiUrl: API_URL,
     incomes,
     expenses,
     incomeSources,
@@ -104,6 +107,11 @@ function App() {
   return (
     <div className={darkMode ? "app dark" : "app"}>
       <Header darkMode={darkMode} setDarkMode={setDarkMode} />
+      {apiError && (
+    <p className="api-error">
+    {apiError}
+    </p>
+    )}
 
       <div className="top-controls">
         <OpeningBalanceField
@@ -142,7 +150,7 @@ function App() {
           amount={totalExpense}
           className="expense"
         />
-        <SummaryCard title="Balance" amount={balance} className="balance" />
+        <SummaryCard title="Closing Balance" amount={balance} className="balance" />
       </div>
       <MonthlyBudget expenses={expenses} selectedMonth={selectedMonth} />
       <ActionButtons

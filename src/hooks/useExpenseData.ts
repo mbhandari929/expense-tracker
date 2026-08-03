@@ -24,13 +24,10 @@ export const useExpenseData = (apiUrl: string) => {
     loadJson<string[]>("expenseSources", DEFAULT_EXPENSE_SOURCES),
   );
 
-  const [incomes, setIncomes] = useState<Item[]>(() =>
-    fixOldData(loadJson<unknown[]>("incomes", []), "income"),
-  );
+ const [incomes, setIncomes] = useState<Item[]>([]);
 
-  const [expenses, setExpenses] = useState<Item[]>(() =>
-    fixOldData(loadJson<unknown[]>("expenses", []), "expense"),
-  );
+const [expenses, setExpenses] = useState<Item[]>([]);
+const [apiError, setApiError] = useState("");
 
   useEffect(() => {
     localStorage.setItem(
@@ -50,13 +47,7 @@ export const useExpenseData = (apiUrl: string) => {
     );
   }, [expenseSources]);
 
-  useEffect(() => {
-    localStorage.setItem("incomes", JSON.stringify(incomes));
-  }, [incomes]);
-
-  useEffect(() => {
-    localStorage.setItem("expenses", JSON.stringify(expenses));
-  }, [expenses]);
+  
   useEffect(() => {
     const loadTransactions = async () => {
       try {
@@ -79,19 +70,25 @@ export const useExpenseData = (apiUrl: string) => {
           ),
         );
 
-        setExpenses(
+               setExpenses(
           fixOldData(
             Array.isArray(expenseData) ? expenseData : [],
             "expense",
           ),
         );
+
+        setApiError("");
       } catch (error) {
         console.error("Backend data load failed:", error);
+        setApiError(
+          "API connection failed. Please check the backend server.",
+        );
       }
     };
 
     void loadTransactions();
   }, [apiUrl]);
+
   return {
     openingBalance,
     setOpeningBalance,
@@ -103,5 +100,6 @@ export const useExpenseData = (apiUrl: string) => {
     setIncomes,
     expenses,
     setExpenses,
+    apiError,
   };
 };
