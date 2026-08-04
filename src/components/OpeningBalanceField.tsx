@@ -9,7 +9,7 @@ function OpeningBalanceField({
 }: OpeningBalanceFieldProps) {
   return (
     <div className="opening-balance-field">
-      <label htmlFor="opening-balance">Opening Balance</label>
+     <label htmlFor="opening-balance">Base Opening Balance</label> 
 
       <div className="opening-balance-input">
         <span>¥</span>

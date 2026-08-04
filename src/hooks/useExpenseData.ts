@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Item } from "../types/transaction";
 import { fixOldData } from "../utils/storage";
 
@@ -39,6 +39,8 @@ export const useExpenseData = (apiUrl: string) => {
   const [apiError, setApiError] = useState("");
   const [settingsLoaded, setSettingsLoaded] = useState(false);
 
+  const skipInitialSettingsSave = useRef(true);
+
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -62,6 +64,7 @@ export const useExpenseData = (apiUrl: string) => {
 
         const incomeData: unknown = await incomeResponse.json();
         const expenseData: unknown = await expenseResponse.json();
+
         const settingsData =
           (await settingsResponse.json()) as SettingsData;
 
@@ -79,7 +82,9 @@ export const useExpenseData = (apiUrl: string) => {
           ),
         );
 
-        setOpeningBalance(Number(settingsData.openingBalance) || 0);
+        setOpeningBalance(
+          Number(settingsData.openingBalance) || 0,
+        );
 
         setIncomeSources(
           Array.isArray(settingsData.incomeSources)
@@ -111,6 +116,7 @@ export const useExpenseData = (apiUrl: string) => {
         setApiError("");
       } catch (error) {
         console.error("Backend data load failed:", error);
+
         setApiError(
           "API connection failed. Please check the backend server.",
         );
@@ -123,35 +129,47 @@ export const useExpenseData = (apiUrl: string) => {
   useEffect(() => {
     if (!settingsLoaded) return;
 
-    const saveSettings = async () => {
-      try {
-        const response = await fetch(`${apiUrl}/settings`, {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            openingBalance,
-            incomeSources,
-            expenseSources,
-            monthlyBudgets,
-          }),
-        });
+    if (skipInitialSettingsSave.current) {
+      skipInitialSettingsSave.current = false;
+      return;
+    }
 
-        if (!response.ok) {
-          throw new Error("Failed to save settings");
+    const timeoutId = window.setTimeout(() => {
+      const saveSettings = async () => {
+        try {
+          const response = await fetch(`${apiUrl}/settings`, {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              openingBalance,
+              incomeSources,
+              expenseSources,
+              monthlyBudgets,
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to save settings");
+          }
+
+          setApiError("");
+        } catch (error) {
+          console.error("Settings save failed:", error);
+
+          setApiError(
+            "Settings could not be saved. Please check the backend server.",
+          );
         }
+      };
 
-        setApiError("");
-      } catch (error) {
-        console.error("Settings save failed:", error);
-        setApiError(
-          "Settings could not be saved. Please check the backend server.",
-        );
-      }
+      void saveSettings();
+    }, 600);
+
+    return () => {
+      window.clearTimeout(timeoutId);
     };
-
-    void saveSettings();
   }, [
     apiUrl,
     openingBalance,

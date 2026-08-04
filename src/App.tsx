@@ -120,9 +120,9 @@ function App() {
 
       <div className="top-controls">
         <OpeningBalanceField
-          value={selectedOpeningBalance}
-          onChange={setOpeningBalance}
-        />
+    value={openingBalance}
+    onChange={setOpeningBalance}
+    />
         <select
           value={selectedMonth}
           onChange={(event) => setSelectedMonth(event.target.value)}
@@ -144,7 +144,10 @@ function App() {
       </div>
 
       <div className="summary-area">
-        <SummaryCard title="Opening Balance" amount={selectedOpeningBalance} />
+        <SummaryCard
+   title="Carried Opening Balance"
+  amount={selectedOpeningBalance}
+  />
         <SummaryCard
           title="Total Income"
           amount={totalIncome}

@@ -1,6 +1,11 @@
-import type { ChangeEvent, Dispatch, SetStateAction } from "react";
+import type {
+  ChangeEvent,
+  Dispatch,
+  SetStateAction,
+} from "react";
 import type { Item } from "../types/transaction";
 import { fixOldData } from "../utils/storage";
+
 type MonthlyBudgets = Record<string, number>;
 
 type UseBackupProps = {
@@ -11,12 +16,39 @@ type UseBackupProps = {
   expenseSources: string[];
   openingBalance: number;
   monthlyBudgets: MonthlyBudgets;
-setMonthlyBudgets: Dispatch<SetStateAction<MonthlyBudgets>>;
+  setMonthlyBudgets: Dispatch<
+    SetStateAction<MonthlyBudgets>
+  >;
   setIncomes: Dispatch<SetStateAction<Item[]>>;
   setExpenses: Dispatch<SetStateAction<Item[]>>;
-  setIncomeSources: Dispatch<SetStateAction<string[]>>;
-  setExpenseSources: Dispatch<SetStateAction<string[]>>;
-  setOpeningBalance: Dispatch<SetStateAction<number>>;
+  setIncomeSources: Dispatch<
+    SetStateAction<string[]>
+  >;
+  setExpenseSources: Dispatch<
+    SetStateAction<string[]>
+  >;
+  setOpeningBalance: Dispatch<
+    SetStateAction<number>
+  >;
+};
+
+type RestoredTransaction = {
+  id: number | string;
+  text: string;
+  amount: number;
+  date: string;
+};
+
+type RestoreResponse = {
+  message: string;
+  incomes: RestoredTransaction[];
+  expenses: RestoredTransaction[];
+  settings: {
+    openingBalance: number;
+    incomeSources: string[];
+    expenseSources: string[];
+    monthlyBudgets: MonthlyBudgets;
+  };
 };
 
 export const useBackup = ({
@@ -27,7 +59,7 @@ export const useBackup = ({
   expenseSources,
   openingBalance,
   monthlyBudgets,
-setMonthlyBudgets,
+  setMonthlyBudgets,
   setIncomes,
   setExpenses,
   setIncomeSources,
@@ -47,11 +79,17 @@ setMonthlyBudgets,
       ]),
     ];
 
-    const csv = rows.map((row) => row.join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
+    const csv = rows
+      .map((row) => row.join(","))
+      .join("\n");
 
+    const blob = new Blob([csv], {
+      type: "text/csv",
+    });
+
+    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
+
     link.href = url;
     link.download = "expense-tracker.csv";
     link.click();
@@ -60,17 +98,21 @@ setMonthlyBudgets,
   };
 
   const exportJSON = () => {
-   const backupData = {
-  incomes,
-  expenses,
-  incomeSources,
-  expenseSources,
-  openingBalance,
-  monthlyBudgets,
-}; 
-    const blob = new Blob([JSON.stringify(backupData, null, 2)], {
-      type: "application/json",
-    });
+    const backupData = {
+      incomes,
+      expenses,
+      incomeSources,
+      expenseSources,
+      openingBalance,
+      monthlyBudgets,
+    };
+
+    const blob = new Blob(
+      [JSON.stringify(backupData, null, 2)],
+      {
+        type: "application/json",
+      },
+    );
 
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -81,52 +123,30 @@ setMonthlyBudgets,
 
     URL.revokeObjectURL(url);
   };
-const saveTransactionsToApi = async (items: Item[]) => {
-  return Promise.all(
-    items.map(async (item) => {
-      const response = await fetch(`${apiUrl}/${item.type}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          text: item.text,
-          amount: item.amount,
-          date: item.date.slice(0, 10),
-        }),
-      });
 
-      if (!response.ok) {
-        throw new Error("Failed to import transaction");
-      }
-
-      const savedData: {
-        id: number | string;
-        text: string;
-        amount: number;
-        date: string;
-      } = await response.json();
-
-      return {
-        id: String(savedData.id),
-        text: savedData.text,
-        amount: Number(savedData.amount),
-        date: savedData.date,
-        type: item.type,
-      } satisfies Item;
-    }),
-  );
-};
-  const importJSON = (event: ChangeEvent<HTMLInputElement>) => {
+  const importJSON = (
+    event: ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = event.target.files?.[0];
 
     if (!file) return;
+
+    const confirmed = window.confirm(
+      "Importing this backup will replace all current transactions and settings. Continue?",
+    );
+
+    if (!confirmed) {
+      event.target.value = "";
+      return;
+    }
 
     const reader = new FileReader();
 
     reader.onload = async () => {
       try {
-        const data: unknown = JSON.parse(String(reader.result));
+        const data: unknown = JSON.parse(
+          String(reader.result),
+        );
 
         if (
           typeof data !== "object" ||
@@ -138,62 +158,132 @@ const saveTransactionsToApi = async (items: Item[]) => {
 
         const backup = data as Record<string, unknown>;
 
-        const importedIncomes = Array.isArray(backup.incomes)
+        const importedIncomes = Array.isArray(
+          backup.incomes,
+        )
           ? backup.incomes
           : [];
 
-        const importedExpenses = Array.isArray(backup.expenses)
+        const importedExpenses = Array.isArray(
+          backup.expenses,
+        )
           ? backup.expenses
           : [];
 
-        const normalizedIncomes = fixOldData(importedIncomes, "income");
-const normalizedExpenses = fixOldData(importedExpenses, "expense");
+        const normalizedIncomes = fixOldData(
+          importedIncomes,
+          "income",
+        );
 
-const [savedIncomes, savedExpenses] = await Promise.all([
-  saveTransactionsToApi(normalizedIncomes),
-  saveTransactionsToApi(normalizedExpenses),
-]);
+        const normalizedExpenses = fixOldData(
+          importedExpenses,
+          "expense",
+        );
 
-setIncomes((currentIncomes) => [
-  ...currentIncomes,
-  ...savedIncomes,
-]);
+        const restoredIncomeSources = Array.isArray(
+          backup.incomeSources,
+        )
+          ? backup.incomeSources.filter(
+              (source): source is string =>
+                typeof source === "string",
+            )
+          : [];
 
-setExpenses((currentExpenses) => [
-  ...currentExpenses,
-  ...savedExpenses,
-]);
+        const restoredExpenseSources = Array.isArray(
+          backup.expenseSources,
+        )
+          ? backup.expenseSources.filter(
+              (source): source is string =>
+                typeof source === "string",
+            )
+          : [];
+
+        const restoredMonthlyBudgets =
+          typeof backup.monthlyBudgets === "object" &&
+          backup.monthlyBudgets !== null &&
+          !Array.isArray(backup.monthlyBudgets)
+            ? (backup.monthlyBudgets as MonthlyBudgets)
+            : {};
+
+        const response = await fetch(
+          `${apiUrl}/backup/restore`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              incomes: normalizedIncomes.map((item) => ({
+                text: item.text,
+                amount: Number(item.amount),
+                date: item.date.slice(0, 10),
+              })),
+              expenses: normalizedExpenses.map((item) => ({
+                text: item.text,
+                amount: Number(item.amount),
+                date: item.date.slice(0, 10),
+              })),
+              openingBalance:
+                Number(backup.openingBalance) || 0,
+              incomeSources: restoredIncomeSources,
+              expenseSources: restoredExpenseSources,
+              monthlyBudgets: restoredMonthlyBudgets,
+            }),
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error("Backup restore failed");
+        }
+
+        const restoredData =
+          (await response.json()) as RestoreResponse;
+
+        setIncomes(
+          restoredData.incomes.map((item) => ({
+            id: String(item.id),
+            text: item.text,
+            amount: Number(item.amount),
+            date: item.date,
+            type: "income",
+          })),
+        );
+
+        setExpenses(
+          restoredData.expenses.map((item) => ({
+            id: String(item.id),
+            text: item.text,
+            amount: Number(item.amount),
+            date: item.date,
+            type: "expense",
+          })),
+        );
+
+        setOpeningBalance(
+          Number(
+            restoredData.settings.openingBalance,
+          ) || 0,
+        );
 
         setIncomeSources(
-          Array.isArray(backup.incomeSources)
-            ? backup.incomeSources.filter(
-                (source): source is string =>
-                  typeof source === "string",
-              )
-            : [],
+          restoredData.settings.incomeSources,
         );
 
         setExpenseSources(
-          Array.isArray(backup.expenseSources)
-            ? backup.expenseSources.filter(
-                (source): source is string =>
-                  typeof source === "string",
-              )
-            : [],
+          restoredData.settings.expenseSources,
         );
 
-        setOpeningBalance(Number(backup.openingBalance) || 0);
         setMonthlyBudgets(
-  typeof backup.monthlyBudgets === "object" &&
-    backup.monthlyBudgets !== null &&
-    !Array.isArray(backup.monthlyBudgets)
-    ? (backup.monthlyBudgets as MonthlyBudgets)
-    : {},
-);
+          restoredData.settings.monthlyBudgets || {},
+        );
 
-        alert("Backup imported successfully!");
-      } catch {
-        alert("Invalid backup file!");
+        alert("Backup restored successfully!");
+      } catch (error) {
+        console.error("Backup import failed:", error);
+
+        alert(
+          "Backup import failed. Please reload and check your data.",
+        );
       }
     };
 
