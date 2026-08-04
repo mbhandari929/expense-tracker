@@ -1,6 +1,7 @@
 import type { ChangeEvent, Dispatch, SetStateAction } from "react";
 import type { Item } from "../types/transaction";
 import { fixOldData } from "../utils/storage";
+type MonthlyBudgets = Record<string, number>;
 
 type UseBackupProps = {
   apiUrl: string;
@@ -9,6 +10,8 @@ type UseBackupProps = {
   incomeSources: string[];
   expenseSources: string[];
   openingBalance: number;
+  monthlyBudgets: MonthlyBudgets;
+setMonthlyBudgets: Dispatch<SetStateAction<MonthlyBudgets>>;
   setIncomes: Dispatch<SetStateAction<Item[]>>;
   setExpenses: Dispatch<SetStateAction<Item[]>>;
   setIncomeSources: Dispatch<SetStateAction<string[]>>;
@@ -23,6 +26,8 @@ export const useBackup = ({
   incomeSources,
   expenseSources,
   openingBalance,
+  monthlyBudgets,
+setMonthlyBudgets,
   setIncomes,
   setExpenses,
   setIncomeSources,
@@ -55,14 +60,14 @@ export const useBackup = ({
   };
 
   const exportJSON = () => {
-    const backupData = {
-      incomes,
-      expenses,
-      incomeSources,
-      expenseSources,
-      openingBalance,
-    };
-
+   const backupData = {
+  incomes,
+  expenses,
+  incomeSources,
+  expenseSources,
+  openingBalance,
+  monthlyBudgets,
+}; 
     const blob = new Blob([JSON.stringify(backupData, null, 2)], {
       type: "application/json",
     });
@@ -178,6 +183,13 @@ setExpenses((currentExpenses) => [
         );
 
         setOpeningBalance(Number(backup.openingBalance) || 0);
+        setMonthlyBudgets(
+  typeof backup.monthlyBudgets === "object" &&
+    backup.monthlyBudgets !== null &&
+    !Array.isArray(backup.monthlyBudgets)
+    ? (backup.monthlyBudgets as MonthlyBudgets)
+    : {},
+);
 
         alert("Backup imported successfully!");
       } catch {

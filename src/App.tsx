@@ -27,9 +27,12 @@ function App() {
     incomes,
     setIncomes,
    expenses,
-  setExpenses,
-  apiError,
-  } = useExpenseData(API_URL);
+   setExpenses,
+   monthlyBudgets,
+   setMonthlyBudgets,
+   apiError,
+
+ } = useExpenseData(API_URL);
   const {
     transactionType,
     transactionText,
@@ -66,6 +69,8 @@ function App() {
     incomeSources,
     expenseSources,
     openingBalance,
+    monthlyBudgets,
+    setMonthlyBudgets,
     setIncomes,
     setExpenses,
     setIncomeSources,
@@ -152,7 +157,12 @@ function App() {
         />
         <SummaryCard title="Closing Balance" amount={balance} className="balance" />
       </div>
-      <MonthlyBudget expenses={expenses} selectedMonth={selectedMonth} />
+    <MonthlyBudget
+     expenses={expenses}
+    selectedMonth={selectedMonth}
+    monthlyBudgets={monthlyBudgets}
+    setMonthlyBudgets={setMonthlyBudgets}
+    />
       <ActionButtons
         onExportCSV={exportCSV}
         onBackupJSON={exportJSON}

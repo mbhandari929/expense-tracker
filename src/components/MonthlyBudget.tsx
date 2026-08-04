@@ -1,47 +1,31 @@
+import { useMemo } from "react";
+import type { Dispatch, SetStateAction } from "react";
 import { formatCurrency } from "../utils/currency";
-import { useEffect, useMemo, useState } from "react";
 
 type Expense = {
   amount: number;
   date: string;
 };
 
+type MonthlyBudgets = Record<string, number>;
+
 type MonthlyBudgetProps = {
   expenses: Expense[];
   selectedMonth: string;
+  monthlyBudgets: MonthlyBudgets;
+  setMonthlyBudgets: Dispatch<SetStateAction<MonthlyBudgets>>;
 };
-
-type MonthlyBudgets = Record<string, number>;
-
-
 function MonthlyBudget({
   expenses,
   selectedMonth,
+  monthlyBudgets,
+  setMonthlyBudgets,
 }: MonthlyBudgetProps) {
   const currentMonth = new Date().toISOString().slice(0, 7);
 
   const activeMonth =
     selectedMonth === "all" ? currentMonth : selectedMonth;
-
-  const [monthlyBudgets, setMonthlyBudgets] =
-    useState<MonthlyBudgets>(() => {
-      try {
-        const saved = localStorage.getItem("monthlyBudgets");
-
-        return saved ? JSON.parse(saved) : {};
-      } catch {
-        return {};
-      }
-    });
-
-  useEffect(() => {
-    localStorage.setItem(
-      "monthlyBudgets",
-      JSON.stringify(monthlyBudgets)
-    );
-  }, [monthlyBudgets]);
-
-  const monthlyExpense = useMemo(() => {
+    const monthlyExpense = useMemo(() => {
     return expenses
       .filter(
         (item) => item.date.slice(0, 7) === activeMonth
