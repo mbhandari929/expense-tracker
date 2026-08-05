@@ -362,6 +362,8 @@ button:hover {
 
 /* Backup buttons */
 
+/* Backup buttons */
+
 .backup-buttons {
   display: flex;
   flex-wrap: wrap;
@@ -369,12 +371,35 @@ button:hover {
   margin-bottom: 18px;
 }
 
+.backup-buttons button,
+.backup-import-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  color: #ffffff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.backup-buttons button:first-child {
+  background: #2563eb;
+}
+
 .backup-buttons button:nth-child(2) {
   background: #7c3aed;
 }
 
-.backup-buttons button:nth-child(3) {
+.backup-import-button {
   background: #0f766e;
+}
+
+.backup-buttons button:hover,
+.backup-import-button:hover {
+  opacity: 0.9;
 }
 
 /* Transaction form */

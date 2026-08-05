@@ -4,8 +4,65 @@ import type {
   SetStateAction,
 } from "react";
 import type { Item } from "../types/transaction";
-import { fixOldData } from "../utils/storage";
 
+type BackupTransaction = {
+  text: string;
+  amount: number;
+  date: string;
+};
+
+const isRecord = (
+  value: unknown,
+): value is Record<string, unknown> => {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value)
+  );
+};
+
+const normalizeBackupTransactions = (
+  value: unknown,
+): BackupTransaction[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((item) => {
+    if (!isRecord(item)) {
+      return [];
+    }
+
+    const text =
+      typeof item.text === "string"
+        ? item.text.trim()
+        : "";
+
+    const amount = Number(item.amount);
+
+    const date =
+      typeof item.date === "string"
+        ? item.date.slice(0, 10)
+        : "";
+
+    if (
+      text === "" ||
+      !Number.isFinite(amount) ||
+      amount <= 0 ||
+      date === ""
+    ) {
+      return [];
+    }
+
+    return [
+      {
+        text,
+        amount,
+        date,
+      },
+    ];
+  });
+};
 type MonthlyBudgets = Record<string, number>;
 
 type UseBackupProps = {
@@ -170,16 +227,11 @@ export const useBackup = ({
           ? backup.expenses
           : [];
 
-        const normalizedIncomes = fixOldData(
-          importedIncomes,
-          "income",
-        );
+ const normalizedIncomes =
+  normalizeBackupTransactions(importedIncomes);
 
-        const normalizedExpenses = fixOldData(
-          importedExpenses,
-          "expense",
-        );
-
+  const normalizedExpenses =
+  normalizeBackupTransactions(importedExpenses);
         const restoredIncomeSources = Array.isArray(
           backup.incomeSources,
         )
@@ -213,16 +265,8 @@ export const useBackup = ({
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              incomes: normalizedIncomes.map((item) => ({
-                text: item.text,
-                amount: Number(item.amount),
-                date: item.date.slice(0, 10),
-              })),
-              expenses: normalizedExpenses.map((item) => ({
-                text: item.text,
-                amount: Number(item.amount),
-                date: item.date.slice(0, 10),
-              })),
+              incomes: normalizedIncomes,
+              expenses: normalizedExpenses,
               openingBalance:
                 Number(backup.openingBalance) || 0,
               incomeSources: restoredIncomeSources,

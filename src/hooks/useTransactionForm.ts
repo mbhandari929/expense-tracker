@@ -265,7 +265,5 @@ export const useTransactionForm = ({
     saveTransaction,
     editTransaction,
     deleteTransaction,
-    setTransactionType,
-    setEditId,
   };
 };
