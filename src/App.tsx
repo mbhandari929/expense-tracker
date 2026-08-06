@@ -86,10 +86,14 @@ function App() {
     setExpenseSources,
     setOpeningBalance,
   });
- 
-  const [searchText, setSearchText] = useState("");
+
+  const [searchInput, setSearchInput] = useState("");
+  const [appliedSearchText, setAppliedSearchText] =
+    useState("");
+
   const [selectedMonth, setSelectedMonth] =
     useState(getCurrentMonth);
+
   const [darkMode, setDarkMode] = useState(false);
 
   const {
@@ -108,8 +112,17 @@ function App() {
     expenseSources,
     openingBalance,
     selectedMonth,
-    searchText,
+    searchText: appliedSearchText,
   });
+
+  const handleSearch = () => {
+    setAppliedSearchText(searchInput.trim());
+  };
+
+  const handleClearSearch = () => {
+    setSearchInput("");
+    setAppliedSearchText("");
+  };
 
   const handleSaveSettings = async () => {
     const saved = await saveSettings({
@@ -158,15 +171,40 @@ function App() {
           ))}
         </select>
 
-        
-<input
-  type="text"
-  placeholder={`Filter ${selectedMonth} transactions by source...`}
-  value={searchText}
-  onChange={(event) =>
-    setSearchText(event.target.value)
-  }
-/>
+        <div className="search-controls">
+          <input
+            type="text"
+            placeholder={`Search ${
+              selectedMonth === "all"
+                ? "all"
+                : selectedMonth
+            } transactions by source...`}
+            value={searchInput}
+            onChange={(event) =>
+              setSearchInput(event.target.value)
+            }
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                handleSearch();
+              }
+            }}
+          />
+
+          <button
+            type="button"
+            onClick={handleSearch}
+          >
+            Search
+          </button>
+
+          <button
+            type="button"
+            onClick={handleClearSearch}
+          >
+            Clear
+          </button>
+        </div>
+
         <button
           type="button"
           className="save-settings-button"
