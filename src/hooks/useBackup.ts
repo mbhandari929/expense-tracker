@@ -256,7 +256,12 @@ export const useBackup = ({
           !Array.isArray(backup.monthlyBudgets)
             ? (backup.monthlyBudgets as MonthlyBudgets)
             : {};
-
+        const shouldReplace = window.confirm(
+         "Importing this backup will replace all existing transactions and settings. Do you want to continue?",
+       );
+         if (!shouldReplace) {
+        return;
+       }
         const response = await fetch(
           `${apiUrl}/backup/restore`,
           {
