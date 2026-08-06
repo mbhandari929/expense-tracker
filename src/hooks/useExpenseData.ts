@@ -17,6 +17,9 @@ const DEFAULT_EXPENSE_SOURCES = [
   "Other",
 ];
 
+const SETTINGS_STORAGE_KEY =
+  "expense-tracker-settings";
+
 export type MonthlyBudgets = Record<string, number>;
 
 export type SettingsPayload = {
@@ -124,6 +127,67 @@ const normalizeMonthlyBudgets = (
   );
 };
 
+const normalizeSettings = (
+  settingsData: SettingsData,
+): SettingsPayload => {
+  return {
+    openingBalance:
+      Number(settingsData.openingBalance) || 0,
+
+    incomeSources: normalizeSources(
+      settingsData.incomeSources,
+      DEFAULT_INCOME_SOURCES,
+    ),
+
+    expenseSources: normalizeSources(
+      settingsData.expenseSources,
+      DEFAULT_EXPENSE_SOURCES,
+    ),
+
+    monthlyBudgets: normalizeMonthlyBudgets(
+      settingsData.monthlyBudgets,
+    ),
+  };
+};
+
+const loadStoredSettings =
+  (): SettingsPayload | null => {
+    try {
+      const storedSettings = localStorage.getItem(
+        SETTINGS_STORAGE_KEY,
+      );
+
+      if (!storedSettings) {
+        return null;
+      }
+
+      const parsedSettings: unknown =
+        JSON.parse(storedSettings);
+
+      if (!isRecord(parsedSettings)) {
+        return null;
+      }
+
+      return normalizeSettings(parsedSettings);
+    } catch (error) {
+      console.error(
+        "Browser settings load failed:",
+        error,
+      );
+
+      return null;
+    }
+  };
+
+const storeSettings = (
+  settings: SettingsPayload,
+) => {
+  localStorage.setItem(
+    SETTINGS_STORAGE_KEY,
+    JSON.stringify(settings),
+  );
+};
+
 export const useExpenseData = (apiUrl: string) => {
   const [openingBalance, setOpeningBalance] =
     useState(0);
@@ -146,8 +210,17 @@ export const useExpenseData = (apiUrl: string) => {
   const [apiError, setApiError] = useState("");
 
   useEffect(() => {
+    const applySettings = (
+      settings: SettingsPayload,
+    ) => {
+      setOpeningBalance(settings.openingBalance);
+      setIncomeSources(settings.incomeSources);
+      setExpenseSources(settings.expenseSources);
+      setMonthlyBudgets(settings.monthlyBudgets);
+    };
+
     const loadData = async () => {
-      let errorMessage = "";
+      const errorMessages: string[] = [];
 
       try {
         const [
@@ -192,8 +265,16 @@ export const useExpenseData = (apiUrl: string) => {
           error,
         );
 
-        errorMessage =
-          "Transaction data could not be loaded.";
+        errorMessages.push(
+          "Transaction data could not be loaded.",
+        );
+      }
+
+      const storedSettings =
+        loadStoredSettings();
+
+      if (storedSettings) {
+        applySettings(storedSettings);
       }
 
       try {
@@ -210,42 +291,23 @@ export const useExpenseData = (apiUrl: string) => {
         const settingsData =
           (await settingsResponse.json()) as SettingsData;
 
-        setOpeningBalance(
-          Number(settingsData.openingBalance) || 0,
-        );
+        const normalizedSettings =
+          normalizeSettings(settingsData);
 
-        setIncomeSources(
-          normalizeSources(
-            settingsData.incomeSources,
-            DEFAULT_INCOME_SOURCES,
-          ),
-        );
-
-        setExpenseSources(
-          normalizeSources(
-            settingsData.expenseSources,
-            DEFAULT_EXPENSE_SOURCES,
-          ),
-        );
-
-        setMonthlyBudgets(
-          normalizeMonthlyBudgets(
-            settingsData.monthlyBudgets,
-          ),
-        );
+        applySettings(normalizedSettings);
+        storeSettings(normalizedSettings);
       } catch (error) {
         console.error(
           "Settings data load failed:",
           error,
         );
 
-        if (!errorMessage) {
-          errorMessage =
-            "Settings could not be loaded.";
-        }
+        errorMessages.push(
+          "Settings API is unavailable. Browser settings are being used.",
+        );
       }
 
-      setApiError(errorMessage);
+      setApiError(errorMessages.join(" "));
     };
 
     void loadData();
@@ -253,6 +315,21 @@ export const useExpenseData = (apiUrl: string) => {
 
   const saveSettings = useCallback(
     async (settings: SettingsPayload) => {
+      try {
+        storeSettings(settings);
+      } catch (error) {
+        console.error(
+          "Browser settings save failed:",
+          error,
+        );
+
+        setApiError(
+          "Settings could not be saved in this browser.",
+        );
+
+        return false;
+      }
+
       try {
         const response = await fetch(
           `${apiUrl}/settings`,
@@ -275,15 +352,15 @@ export const useExpenseData = (apiUrl: string) => {
         return true;
       } catch (error) {
         console.error(
-          "Settings save failed:",
+          "Settings server sync failed:",
           error,
         );
 
         setApiError(
-          "Settings could not be saved.",
+          "Settings were saved in this browser, but could not be synced with the server.",
         );
 
-        return false;
+        return true;
       }
     },
     [apiUrl],
