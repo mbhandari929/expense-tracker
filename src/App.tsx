@@ -158,15 +158,15 @@ function App() {
           ))}
         </select>
 
-        <input
-          type="text"
-          placeholder="Search source..."
-          value={searchText}
-          onChange={(event) =>
-            setSearchText(event.target.value)
-          }
-        />
-
+        
+<input
+  type="text"
+  placeholder={`Filter ${selectedMonth} transactions by source...`}
+  value={searchText}
+  onChange={(event) =>
+    setSearchText(event.target.value)
+  }
+/>
         <button
           type="button"
           className="save-settings-button"
