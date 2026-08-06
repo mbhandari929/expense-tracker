@@ -10,14 +10,16 @@ type MonthlyReportData = {
 type TransactionStatementProps = {
   items: TransactionItem[];
   report: Record<string, MonthlyReportData>;
-  onEdit: (item: TransactionItem) => void;
+  onSave: (
+    item: TransactionItem,
+  ) => Promise<boolean>;
   onDelete: (item: TransactionItem) => void;
 };
 
 function TransactionStatement({
   items,
   report,
-  onEdit,
+  onSave,
   onDelete,
 }: TransactionStatementProps) {
   return (
@@ -43,9 +45,9 @@ function TransactionStatement({
           ) : (
             items.map((item) => (
               <StatementRow
-                key={item.id}
+                key={`${item.type}-${item.id}`}
                 item={item}
-                onEdit={onEdit}
+                onSave={onSave}
                 onDelete={onDelete}
               />
             ))

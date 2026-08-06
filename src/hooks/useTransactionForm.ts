@@ -209,6 +209,60 @@ export const useTransactionForm = ({
     setEditId(item.id);
   };
 
+  const updateTransactionInline = async (
+    updatedItem: Item,
+  ): Promise<boolean> => {
+  try {
+    const response = await fetch(
+      `${apiUrl}/${updatedItem.type}/${updatedItem.id}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          text: updatedItem.text,
+          amount: updatedItem.amount,
+          date: updatedItem.date,
+        }),
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        `Transaction update failed: ${response.status}`,
+      );
+    }
+
+    if (updatedItem.type === "income") {
+      setIncomes((currentIncomes) =>
+        currentIncomes.map((income) =>
+          income.id === updatedItem.id
+            ? updatedItem
+            : income,
+        ),
+      );
+    } else {
+      setExpenses((currentExpenses) =>
+        currentExpenses.map((expense) =>
+          expense.id === updatedItem.id
+            ? updatedItem
+            : expense,
+        ),
+      );
+    }
+
+    return true;
+  } catch (error) {
+    console.error(
+      "Inline transaction update failed:",
+      error,
+    );
+
+    return false;
+  }
+};
+
   const deleteTransaction = async (item: Item) => {
     const shouldDelete = window.confirm(
       `Delete "${item.text}" transaction?`,
@@ -261,6 +315,7 @@ export const useTransactionForm = ({
     setNewSource,
     changeTransactionType,
     resetForm,
+    updateTransactionInline,
     addSource,
     saveTransaction,
     editTransaction,

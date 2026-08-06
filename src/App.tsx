@@ -57,7 +57,7 @@ function App() {
     resetForm,
     addSource,
     saveTransaction,
-    editTransaction,
+    updateTransactionInline,
     deleteTransaction,
   } = useTransactionForm({
     apiUrl: API_URL,
@@ -235,7 +235,7 @@ function App() {
       <TransactionStatement
         items={filteredTransactions}
         report={monthlyReport}
-        onEdit={editTransaction}
+        onSave={updateTransactionInline}
         onDelete={deleteTransaction}
       />
 
