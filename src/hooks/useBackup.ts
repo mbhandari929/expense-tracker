@@ -1,3 +1,4 @@
+import { apiFetch } from "../utils/api";
 import type {
   ChangeEvent,
   Dispatch,
@@ -262,7 +263,7 @@ export const useBackup = ({
          if (!shouldReplace) {
         return;
        }
-        const response = await fetch(
+        const response = await apiFetch(
           `${apiUrl}/backup/restore`,
           {
             method: "PUT",

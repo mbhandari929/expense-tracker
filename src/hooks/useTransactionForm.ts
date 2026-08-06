@@ -1,15 +1,30 @@
 import { useState } from "react";
-import type { Dispatch, SetStateAction } from "react";
-import type { Item, TransactionType } from "../types/transaction";
+import type {
+  Dispatch,
+  SetStateAction,
+} from "react";
+
+import type {
+  Item,
+  TransactionType,
+} from "../types/transaction";
+import { apiFetch } from "../utils/api";
+
 const getTodayLocalDate = () => {
   const today = new Date();
 
   const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, "0");
-  const day = String(today.getDate()).padStart(2, "0");
+  const month = String(
+    today.getMonth() + 1,
+  ).padStart(2, "0");
+  const day = String(today.getDate()).padStart(
+    2,
+    "0",
+  );
 
   return `${year}-${month}-${day}`;
 };
+
 type UseTransactionFormProps = {
   apiUrl: string;
   incomes: Item[];
@@ -18,8 +33,12 @@ type UseTransactionFormProps = {
   expenseSources: string[];
   setIncomes: Dispatch<SetStateAction<Item[]>>;
   setExpenses: Dispatch<SetStateAction<Item[]>>;
-  setIncomeSources: Dispatch<SetStateAction<string[]>>;
-  setExpenseSources: Dispatch<SetStateAction<string[]>>;
+  setIncomeSources: Dispatch<
+    SetStateAction<string[]>
+  >;
+  setExpenseSources: Dispatch<
+    SetStateAction<string[]>
+  >;
 };
 
 export const useTransactionForm = ({
@@ -35,20 +54,34 @@ export const useTransactionForm = ({
 }: UseTransactionFormProps) => {
   const [transactionType, setTransactionType] =
     useState<TransactionType>("income");
-  const [transactionText, setTransactionText] = useState("");
-  const [transactionAmount, setTransactionAmount] = useState("");
+
+  const [transactionText, setTransactionText] =
+    useState("");
+
+  const [transactionAmount, setTransactionAmount] =
+    useState("");
+
   const [transactionDate, setTransactionDate] =
-  useState(getTodayLocalDate);
+    useState(getTodayLocalDate);
+
   const [newSource, setNewSource] = useState("");
-  const [editId, setEditId] = useState<string | null>(null);
+
+  const [editId, setEditId] = useState<
+    string | null
+  >(null);
+
+  const [formError, setFormError] = useState("");
 
   const allItems = [...incomes, ...expenses];
 
   const availableSources =
-    transactionType === "income" ? incomeSources : expenseSources;
+    transactionType === "income"
+      ? incomeSources
+      : expenseSources;
 
   const sourceOptions =
-    transactionText && !availableSources.includes(transactionText)
+    transactionText &&
+    !availableSources.includes(transactionText)
       ? [transactionText, ...availableSources]
       : availableSources;
 
@@ -58,18 +91,28 @@ export const useTransactionForm = ({
     setTransactionDate(getTodayLocalDate());
     setNewSource("");
     setEditId(null);
+    setFormError("");
   };
 
-  const changeTransactionType = (type: TransactionType) => {
+  const changeTransactionType = (
+    type: TransactionType,
+  ) => {
     setTransactionType(type);
     setTransactionText("");
     setNewSource("");
+    setEditId(null);
+    setFormError("");
   };
 
   const addSource = () => {
     const source = newSource.trim();
 
-    if (source === "") return;
+    if (source === "") {
+      setFormError(
+        "Please enter a source name.",
+      );
+      return;
+    }
 
     if (transactionType === "income") {
       if (!incomeSources.includes(source)) {
@@ -78,7 +121,9 @@ export const useTransactionForm = ({
           source,
         ]);
       }
-    } else if (!expenseSources.includes(source)) {
+    } else if (
+      !expenseSources.includes(source)
+    ) {
       setExpenseSources((currentSources) => [
         ...currentSources,
         source,
@@ -87,90 +132,174 @@ export const useTransactionForm = ({
 
     setTransactionText(source);
     setNewSource("");
+    setFormError("");
+  };
+
+  const validateTransaction = () => {
+    const text = transactionText.trim();
+    const amount = Number(transactionAmount);
+    const today = getTodayLocalDate();
+
+    if (transactionDate === "") {
+      setFormError(
+        "Please select a transaction date.",
+      );
+      return null;
+    }
+
+    if (transactionDate > today) {
+      setFormError(
+        "Future dates are not allowed.",
+      );
+      return null;
+    }
+
+    if (text === "") {
+      setFormError(
+        "Please select or add a source.",
+      );
+      return null;
+    }
+
+    if (
+      transactionAmount === "" ||
+      !Number.isFinite(amount) ||
+      amount <= 0
+    ) {
+      setFormError(
+        "Amount must be greater than 0.",
+      );
+      return null;
+    }
+
+    setFormError("");
+
+    return {
+      text,
+      amount,
+      date: transactionDate,
+    };
   };
 
   const saveTransaction = async () => {
-    const text = transactionText.trim();
-    const amount = Number(transactionAmount);
+    const validatedData =
+      validateTransaction();
 
-    if (text === "" || transactionAmount === "" || amount <= 0) {
+    if (!validatedData) {
       return;
     }
 
-    if (editId) {
-      const originalItem = allItems.find((item) => item.id === editId);
+    const { text, amount, date } =
+      validatedData;
 
-      if (!originalItem) return;
+    if (editId) {
+      const originalItem = allItems.find(
+        (item) => item.id === editId,
+      );
+
+      if (!originalItem) {
+        setFormError(
+          "Transaction could not be found.",
+        );
+        return;
+      }
 
       try {
-        const response = await fetch(
+        const response = await apiFetch(
           `${apiUrl}/${originalItem.type}/${editId}`,
           {
             method: "PATCH",
             headers: {
-              "Content-Type": "application/json",
+              "Content-Type":
+                "application/json",
             },
             body: JSON.stringify({
               text,
               amount,
-              date: transactionDate,
+              date,
             }),
           },
         );
 
         if (!response.ok) {
-          throw new Error("Failed to update transaction");
+          const errorBody =
+            await response.text();
+
+          throw new Error(
+            `Update failed: ${response.status} ${errorBody}`,
+          );
         }
 
         const updatedItem: Item = {
           ...originalItem,
           text,
           amount,
-          date: transactionDate,
+          date,
         };
 
-        if (originalItem.type === "income") {
+        if (
+          originalItem.type === "income"
+        ) {
           setIncomes((currentIncomes) =>
             currentIncomes.map((item) =>
-              item.id === editId ? updatedItem : item,
+              item.id === editId
+                ? updatedItem
+                : item,
             ),
           );
         } else {
           setExpenses((currentExpenses) =>
             currentExpenses.map((item) =>
-              item.id === editId ? updatedItem : item,
+              item.id === editId
+                ? updatedItem
+                : item,
             ),
           );
         }
       } catch (error) {
-        console.error("Transaction update failed:", error);
-        alert("Transaction could not be updated.");
+        console.error(
+          "Transaction update failed:",
+          error,
+        );
+
+        setFormError(
+          "Transaction could not be updated.",
+        );
         return;
       }
     } else {
       try {
-        const response = await fetch(`${apiUrl}/${transactionType}`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
+        const response = await apiFetch(
+          `${apiUrl}/${transactionType}`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+            body: JSON.stringify({
+              text,
+              amount,
+              date,
+            }),
           },
-          body: JSON.stringify({
-            text,
-            amount,
-            date: transactionDate,
-          }),
-        });
+        );
 
         if (!response.ok) {
-          throw new Error("Failed to save transaction");
+          const errorBody =
+            await response.text();
+
+          throw new Error(
+            `Save failed: ${response.status} ${errorBody}`,
+          );
         }
 
-        const savedData: {
+        const savedData = (await response.json()) as {
           id: number | string;
           text: string;
           amount: number;
           date: string;
-        } = await response.json();
+        };
 
         const newItem: Item = {
           id: String(savedData.id),
@@ -186,14 +315,22 @@ export const useTransactionForm = ({
             newItem,
           ]);
         } else {
-          setExpenses((currentExpenses) => [
-            ...currentExpenses,
-            newItem,
-          ]);
+          setExpenses(
+            (currentExpenses) => [
+              ...currentExpenses,
+              newItem,
+            ],
+          );
         }
       } catch (error) {
-        console.error("Transaction save failed:", error);
-        alert("Transaction could not be saved.");
+        console.error(
+          "Transaction save failed:",
+          error,
+        );
+
+        setFormError(
+          "Transaction could not be saved.",
+        );
         return;
       }
     }
@@ -204,74 +341,90 @@ export const useTransactionForm = ({
   const editTransaction = (item: Item) => {
     setTransactionType(item.type);
     setTransactionText(item.text);
-    setTransactionAmount(String(item.amount));
-    setTransactionDate(item.date);
+    setTransactionAmount(
+      String(item.amount),
+    );
+    setTransactionDate(
+      item.date.slice(0, 10),
+    );
     setEditId(item.id);
+    setFormError("");
   };
 
   const updateTransactionInline = async (
     updatedItem: Item,
   ): Promise<boolean> => {
-  try {
-    const response = await fetch(
-      `${apiUrl}/${updatedItem.type}/${updatedItem.id}`,
-      {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
+    try {
+      const response = await apiFetch(
+        `${apiUrl}/${updatedItem.type}/${updatedItem.id}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          body: JSON.stringify({
+            text: updatedItem.text,
+            amount: updatedItem.amount,
+            date: updatedItem.date.slice(
+              0,
+              10,
+            ),
+          }),
         },
-        body: JSON.stringify({
-          text: updatedItem.text,
-          amount: updatedItem.amount,
-          date: updatedItem.date,
-        }),
-      },
-    );
-
-    if (!response.ok) {
-      throw new Error(
-        `Transaction update failed: ${response.status}`,
       );
+
+      if (!response.ok) {
+        const errorBody =
+          await response.text();
+
+        throw new Error(
+          `Inline update failed: ${response.status} ${errorBody}`,
+        );
+      }
+
+      if (updatedItem.type === "income") {
+        setIncomes((currentIncomes) =>
+          currentIncomes.map((income) =>
+            income.id === updatedItem.id
+              ? updatedItem
+              : income,
+          ),
+        );
+      } else {
+        setExpenses((currentExpenses) =>
+          currentExpenses.map((expense) =>
+            expense.id === updatedItem.id
+              ? updatedItem
+              : expense,
+          ),
+        );
+      }
+
+      return true;
+    } catch (error) {
+      console.error(
+        "Inline transaction update failed:",
+        error,
+      );
+
+      return false;
     }
+  };
 
-    if (updatedItem.type === "income") {
-      setIncomes((currentIncomes) =>
-        currentIncomes.map((income) =>
-          income.id === updatedItem.id
-            ? updatedItem
-            : income,
-        ),
-      );
-    } else {
-      setExpenses((currentExpenses) =>
-        currentExpenses.map((expense) =>
-          expense.id === updatedItem.id
-            ? updatedItem
-            : expense,
-        ),
-      );
-    }
-
-    return true;
-  } catch (error) {
-    console.error(
-      "Inline transaction update failed:",
-      error,
-    );
-
-    return false;
-  }
-};
-
-  const deleteTransaction = async (item: Item) => {
+  const deleteTransaction = async (
+    item: Item,
+  ) => {
     const shouldDelete = window.confirm(
       `Delete "${item.text}" transaction?`,
     );
 
-    if (!shouldDelete) return;
+    if (!shouldDelete) {
+      return;
+    }
 
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${apiUrl}/${item.type}/${item.id}`,
         {
           method: "DELETE",
@@ -279,16 +432,27 @@ export const useTransactionForm = ({
       );
 
       if (!response.ok) {
-        throw new Error("Failed to delete transaction");
+        const errorBody =
+          await response.text();
+
+        throw new Error(
+          `Delete failed: ${response.status} ${errorBody}`,
+        );
       }
 
       if (item.type === "income") {
         setIncomes((currentIncomes) =>
-          currentIncomes.filter((income) => income.id !== item.id),
+          currentIncomes.filter(
+            (income) =>
+              income.id !== item.id,
+          ),
         );
       } else {
         setExpenses((currentExpenses) =>
-          currentExpenses.filter((expense) => expense.id !== item.id),
+          currentExpenses.filter(
+            (expense) =>
+              expense.id !== item.id,
+          ),
         );
       }
 
@@ -296,8 +460,14 @@ export const useTransactionForm = ({
         resetForm();
       }
     } catch (error) {
-      console.error("Transaction delete failed:", error);
-      alert("Transaction could not be deleted.");
+      console.error(
+        "Transaction delete failed:",
+        error,
+      );
+
+      alert(
+        "Transaction could not be deleted.",
+      );
     }
   };
 
@@ -308,6 +478,7 @@ export const useTransactionForm = ({
     transactionDate,
     newSource,
     editId,
+    formError,
     sourceOptions,
     setTransactionText,
     setTransactionAmount,

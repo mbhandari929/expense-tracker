@@ -1,3 +1,4 @@
+import { apiFetch } from "../utils/api";
 import { useCallback, useEffect, useState } from "react";
 import type {
   Item,
@@ -227,8 +228,8 @@ export const useExpenseData = (apiUrl: string) => {
           incomeResponse,
           expenseResponse,
         ] = await Promise.all([
-          fetch(`${apiUrl}/income`),
-          fetch(`${apiUrl}/expense`),
+          apiFetch(`${apiUrl}/income`),
+          apiFetch(`${apiUrl}/expense`),
         ]);
 
         if (
@@ -278,7 +279,7 @@ export const useExpenseData = (apiUrl: string) => {
       }
 
       try {
-        const settingsResponse = await fetch(
+        const settingsResponse = await apiFetch(
           `${apiUrl}/settings`,
         );
 
@@ -331,7 +332,7 @@ export const useExpenseData = (apiUrl: string) => {
       }
 
       try {
-        const response = await fetch(
+        const response = await apiFetch(
           `${apiUrl}/settings`,
           {
             method: "PATCH",
