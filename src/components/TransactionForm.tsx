@@ -92,34 +92,38 @@ function TransactionForm({
             : "Add Expense Source"}
         </label>
 
-        <div className="source-input-row">
-          <input
-            id="new-source"
-            type="text"
-            value={newSource}
-            onChange={(event) =>
-              onNewSourceChange(event.target.value)
-            }
-            placeholder={
-              type === "income"
-                ? "Add income source"
-                : "Add expense source"
-            }
-          />
+       
+<div className="source-input-row">
+  <input
+    id="new-source"
+    type="text"
+    value={newSource}
+    onChange={(event) =>
+      onNewSourceChange(event.target.value)
+    }
+    placeholder={
+      type === "income"
+        ? "Add income source"
+        : "Add expense source"
+    }
+  />
 
-          <button type="button" onClick={onAddSource}>
-            {type === "income"
-              ? "Add Income Source"
-              : "Add Expense Source"}
-          </button>
-        </div>
+  <button type="button" onClick={onAddSource}>
+    {type === "income"
+      ? "Add Income Source"
+      : "Add Expense Source"}
+  </button>
+</div>
 
-        <label htmlFor="transaction-source">
-          {type === "income"
-            ? "Income Source"
-            : "Expense Source"}
-        </label>
+<p className="source-save-note">
+  New sources are not permanently saved until you click Save Settings.
+</p>
 
+<label htmlFor="transaction-source">
+  {type === "income"
+    ? "Income Source"
+    : "Expense Source"}
+</label>
         <select
           id="transaction-source"
           value={source}
