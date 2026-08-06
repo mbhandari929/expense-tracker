@@ -35,6 +35,15 @@ function TransactionForm({
   onSubmit,
   onCancel,
 }: TransactionFormProps) {
+  const now = new Date();
+
+  const today = `${now.getFullYear()}-${String(
+    now.getMonth() + 1,
+  ).padStart(2, "0")}-${String(now.getDate()).padStart(
+    2,
+    "0",
+  )}`;
+
   return (
     <div className="source-area compact-area single-transaction-area">
       <form
@@ -46,35 +55,51 @@ function TransactionForm({
       >
         <h2>{isEditing ? "Edit Transaction" : "Add Transaction"}</h2>
 
-        <label htmlFor="transaction-type">Transaction Type</label>
+        <label htmlFor="transaction-type">
+          Transaction Type
+        </label>
+
         <select
-     id="transaction-type"
-    value={type}
-    disabled={isEditing}
-    onChange={(event) =>
-    onTypeChange(event.target.value as TransactionType)
-    }
- >
-    
+          id="transaction-type"
+          value={type}
+          disabled={isEditing}
+          onChange={(event) =>
+            onTypeChange(event.target.value as TransactionType)
+          }
+        >
           <option value="income">Income</option>
           <option value="expense">Expense</option>
         </select>
 
-        <label htmlFor="transaction-date">Transaction Date</label>
+        <label htmlFor="transaction-date">
+          Transaction Date
+        </label>
+
         <input
           id="transaction-date"
           type="date"
           value={date}
-          onChange={(event) => onDateChange(event.target.value)}
+          max={today}
+          required
+          onChange={(event) =>
+            onDateChange(event.target.value)
+          }
         />
 
-        <label htmlFor="new-source">Add New Source</label>
+        <label htmlFor="new-source">
+          {type === "income"
+            ? "Add Income Source"
+            : "Add Expense Source"}
+        </label>
+
         <div className="source-input-row">
           <input
             id="new-source"
             type="text"
             value={newSource}
-            onChange={(event) => onNewSourceChange(event.target.value)}
+            onChange={(event) =>
+              onNewSourceChange(event.target.value)
+            }
             placeholder={
               type === "income"
                 ? "Add income source"
@@ -83,38 +108,67 @@ function TransactionForm({
           />
 
           <button type="button" onClick={onAddSource}>
-            Add Source
+            {type === "income"
+              ? "Add Income Source"
+              : "Add Expense Source"}
           </button>
         </div>
 
-        <label htmlFor="transaction-source">Source</label>
+        <label htmlFor="transaction-source">
+          {type === "income"
+            ? "Income Source"
+            : "Expense Source"}
+        </label>
+
         <select
           id="transaction-source"
           value={source}
-          onChange={(event) => onSourceChange(event.target.value)}
+          required
+          onChange={(event) =>
+            onSourceChange(event.target.value)
+          }
         >
-          <option value="">Select source</option>
+          <option value="">
+            {type === "income"
+              ? "Select income source"
+              : "Select expense source"}
+          </option>
 
           {sourceOptions.map((sourceOption) => (
-            <option key={sourceOption} value={sourceOption}>
+            <option
+              key={sourceOption}
+              value={sourceOption}
+            >
               {sourceOption}
             </option>
           ))}
         </select>
 
-        <label htmlFor="transaction-amount">Amount</label>
+        <label htmlFor="transaction-amount">
+          Amount
+        </label>
+
         <input
           id="transaction-amount"
           type="number"
-          min="0"
+          min="1"
+          step="any"
           value={amount}
-          onChange={(event) => onAmountChange(event.target.value)}
+          required
+          onChange={(event) =>
+            onAmountChange(event.target.value)
+          }
+          onWheel={(event) =>
+            event.currentTarget.blur()
+          }
           placeholder="Amount"
         />
 
         <div className="transaction-form-actions">
           <button type="submit">
-            {isEditing ? "Update Transaction" : "Add Transaction"}
+            {isEditing
+              ? "Update Transaction"
+              : "Add Transaction"}
           </button>
 
           {isEditing && (
