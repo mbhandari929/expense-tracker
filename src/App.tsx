@@ -86,7 +86,7 @@ function App() {
     setExpenseSources,
     setOpeningBalance,
   });
-
+ 
   const [searchText, setSearchText] = useState("");
   const [selectedMonth, setSelectedMonth] =
     useState(getCurrentMonth);

@@ -1,18 +1,17 @@
-const API_KEY= import.meta.env.VITE_API_KEY as 
- | string
- | undefined;
+const API_KEY = import.meta.env.VITE_API_KEY;
 
- export function apiFetch( 
-    input : RequestInfo |URL,
- init : RequestInit ={}) {
+export const apiFetch = (
+  input: RequestInfo | URL,
+  init: RequestInit = {},
+) => {
   const headers = new Headers(init.headers);
 
   if (API_KEY) {
-    headers.set("x-api-key", API_KEY);
+    headers.set("X-API-Key", API_KEY);
   }
 
   return fetch(input, {
     ...init,
     headers,
   });
-}
+};
