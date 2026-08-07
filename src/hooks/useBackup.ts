@@ -188,17 +188,7 @@ export const useBackup = ({
     const file = event.target.files?.[0];
 
     if (!file) return;
-
-    const confirmed = window.confirm(
-      "Importing this backup will replace all current transactions and settings. Continue?",
-    );
-
-    if (!confirmed) {
-      event.target.value = "";
-      return;
-    }
-
-    const reader = new FileReader();
+   const reader = new FileReader();
 
     reader.onload = async () => {
       try {

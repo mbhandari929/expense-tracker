@@ -716,3 +716,13 @@ button:hover {
   font-weight: 600;
   text-align: center;
 }
+.search-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.search-buttons button {
+  flex: 1;
+  margin: 0;
+}

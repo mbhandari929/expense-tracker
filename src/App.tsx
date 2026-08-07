@@ -171,48 +171,47 @@ function App() {
           ))}
         </select>
 
-        <div className="search-controls">
-          <input
-            type="text"
-            placeholder={`Search ${
-              selectedMonth === "all"
-                ? "all"
-                : selectedMonth
-            } transactions by source...`}
-            value={searchInput}
-            onChange={(event) =>
-              setSearchInput(event.target.value)
-            }
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                handleSearch();
-              }
-            }}
-          />
+       <div className="search-controls">
+  <input
+    type="text"
+    placeholder={`Search ${
+      selectedMonth === "all" ? "all" : selectedMonth
+    } transactions by source...`}
+    value={searchInput}
+    onChange={(event) =>
+      setSearchInput(event.target.value)
+    }
+    onKeyDown={(event) => {
+      if (event.key === "Enter") {
+        handleSearch();
+      }
+    }}
+  />
 
-          <button
-            type="button"
-            onClick={handleSearch}
-          >
-            Search
-          </button>
+  <div className="search-buttons">
+    <button
+      type="button"
+      onClick={handleSearch}
+    >
+      Search
+    </button>
 
-          <button
-            type="button"
-            onClick={handleClearSearch}
-          >
-            Clear
-          </button>
-        </div>
-
-        <button
-          type="button"
-          className="save-settings-button"
-          onClick={handleSaveSettings}
-        >
-          Save Settings
-        </button>
-      </div>
+    <button
+      type="button"
+      onClick={handleClearSearch}
+    >
+      Clear
+      <button
+  type="button"
+  className="save-settings-button"
+  onClick={handleSaveSettings}
+>
+  Save Settings
+</button>
+    </button>
+  </div>
+</div>
+</div>
 
       <div className="summary-area">
         <SummaryCard

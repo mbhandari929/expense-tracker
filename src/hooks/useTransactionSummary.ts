@@ -113,7 +113,7 @@ export const useTransactionSummary = ({
       ...incomeSources.map((source) => ({
         type: "income" as const,
         source,
-        total: monthFilteredIncomes
+        total: incomes
           .filter((item) => item.text === source)
           .reduce((sum, item) => sum + item.amount, 0),
       })),
@@ -121,7 +121,7 @@ export const useTransactionSummary = ({
       ...expenseSources.map((source) => ({
         type: "expense" as const,
         source,
-        total: monthFilteredExpenses
+        total:expenses
           .filter((item) => item.text === source)
           .reduce((sum, item) => sum + item.amount, 0),
       })),
@@ -136,8 +136,8 @@ export const useTransactionSummary = ({
   }, [
     incomeSources,
     expenseSources,
-    monthFilteredIncomes,
-    monthFilteredExpenses,
+    incomes,
+    expenses,
   ]);
 
   const monthlyReport = useMemo(() => {
