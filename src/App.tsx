@@ -1,6 +1,5 @@
 import { useState } from "react";
 import ActionButtons from "./components/ActionButtons";
-import Header from "./components/Header";
 import MonthlyBudget from "./components/MonthlyBudget";
 import OpeningBalanceField from "./components/OpeningBalanceField";
 import SummaryCard from "./components/SummaryCard";
@@ -141,10 +140,18 @@ function App() {
 
   return (
     <div className={darkMode ? "app dark" : "app"}>
-      <Header
-        darkMode={darkMode}
-        setDarkMode={setDarkMode}
-      />
+      <div className="header">
+        <h1>💰 Expense Tracker App</h1>
+
+        <button
+          type="button"
+          onClick={() =>
+            setDarkMode((currentMode) => !currentMode)
+          }
+        >
+          {darkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}
+        </button>
+      </div>
 
       {apiError && (
         <p className="api-error">{apiError}</p>
@@ -171,47 +178,50 @@ function App() {
           ))}
         </select>
 
-       <div className="search-controls">
-  <input
-    type="text"
-    placeholder={`Search ${
-      selectedMonth === "all" ? "all" : selectedMonth
-    } transactions by source...`}
-    value={searchInput}
-    onChange={(event) =>
-      setSearchInput(event.target.value)
-    }
-    onKeyDown={(event) => {
-      if (event.key === "Enter") {
-        handleSearch();
-      }
-    }}
-  />
+        <div className="search-controls">
+          <input
+            type="text"
+            placeholder={`Search ${
+              selectedMonth === "all"
+                ? "all"
+                : selectedMonth
+            } transactions by source...`}
+            value={searchInput}
+            onChange={(event) =>
+              setSearchInput(event.target.value)
+            }
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                handleSearch();
+              }
+            }}
+          />
 
-  <div className="search-buttons">
-    <button
-      type="button"
-      onClick={handleSearch}
-    >
-      Search
-    </button>
+          <div className="search-buttons">
+            <button
+              type="button"
+              onClick={handleSearch}
+            >
+              Search
+            </button>
 
-    <button
-      type="button"
-      onClick={handleClearSearch}
-    >
-      Clear
-      <button
-  type="button"
-  className="save-settings-button"
-  onClick={handleSaveSettings}
->
-  Save Settings
-</button>
-    </button>
-  </div>
-</div>
-</div>
+            <button
+              type="button"
+              onClick={handleClearSearch}
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          className="save-settings-button"
+          onClick={handleSaveSettings}
+        >
+          Save Settings
+        </button>
+      </div>
 
       <div className="summary-area">
         <SummaryCard
