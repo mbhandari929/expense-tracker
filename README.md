@@ -6,7 +6,7 @@ A React, TypeScript, and Vite application for managing income and expenses.
 
 - Add, edit, and delete income and expense transactions
 - View monthly income and expense reports
-- Manage base and carried opening balances
+- Manage opening balances
 - Set monthly expense limits
 - Manage income and expense sources
 - Search transactions
@@ -23,7 +23,43 @@ A React, TypeScript, and Vite application for managing income and expenses.
 
 ## Backend Repository
 
-The backend is maintained in a separate NestJS repository:
-
-```text
 https://github.com/mbhandari929/expense-tracker-api-new
+
+## Local Setup
+
+### 1. Install dependencies
+
+npm install
+
+### 2. Create `.env.local`
+
+PowerShell:
+
+Copy-Item .env.example .env.local
+
+### 3. Configure API settings
+
+In `.env.local`:
+
+VITE_API_URL=/api
+VITE_API_KEY=your-api-key-here
+
+The frontend `VITE_API_KEY` must use the same value as the backend `API_KEY`.
+
+### 4. Start the backend
+
+Backend URL:
+
+http://localhost:3000
+
+### 5. Start the frontend
+
+npm run dev
+
+Frontend URL:
+
+http://localhost:5173
+
+## Build
+
+npm run build
