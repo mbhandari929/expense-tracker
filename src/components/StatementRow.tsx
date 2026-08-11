@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import StatementActionButtons from "./StatementActionButtons";
 import { formatCurrency } from "../utils/currency";
 
@@ -35,13 +35,6 @@ function StatementRow({
   const [isSaving, setIsSaving] = useState(false);
 
   const today = new Date().toISOString().slice(0, 10);
-
-  useEffect(() => {
-    setEditDate(item.date.slice(0, 10));
-    setEditText(item.text);
-    setEditAmount(String(item.amount));
-  }, [item]);
-
   const startEditing = () => {
     setEditDate(item.date.slice(0, 10));
     setEditText(item.text);

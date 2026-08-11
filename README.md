@@ -42,9 +42,10 @@ Copy-Item .env.example .env.local
 In `.env.local`:
 
 VITE_API_URL=/api
-VITE_API_KEY=your-api-key-here
 
-The frontend `VITE_API_KEY` must use the same value as the backend `API_KEY`.
+Authentication is handled using JWT.
+After login, the frontend sends the access token in the Authorization header.
+
 
 ### 4. Start the backend
 

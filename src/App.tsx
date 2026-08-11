@@ -1,4 +1,5 @@
 import { useState } from "react";
+import AuthForm from "./components/AuthForm";
 import ActionButtons from "./components/ActionButtons";
 import MonthlyBudget from "./components/MonthlyBudget";
 import OpeningBalanceField from "./components/OpeningBalanceField";
@@ -10,6 +11,7 @@ import { useBackup } from "./hooks/useBackup";
 import { useExpenseData } from "./hooks/useExpenseData";
 import { useTransactionForm } from "./hooks/useTransactionForm";
 import { useTransactionSummary } from "./hooks/useTransactionSummary";
+import { getAccessToken, removeAccessToken } from "./utils/api";
 import "./App.css";
 
 const API_URL = import.meta.env.VITE_API_URL || "/api";
@@ -17,12 +19,17 @@ const API_URL = import.meta.env.VITE_API_URL || "/api";
 const getCurrentMonth = () => {
   const today = new Date();
 
-  return `${today.getFullYear()}-${String(
-    today.getMonth() + 1,
-  ).padStart(2, "0")}`;
+  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(
+    2,
+    "0",
+  )}`;
 };
 
-function App() {
+type ExpenseTrackerAppProps = {
+  onLogout: () => void;
+};
+
+function ExpenseTrackerApp({ onLogout }: ExpenseTrackerAppProps) {
   const {
     openingBalance,
     setOpeningBalance,
@@ -87,11 +94,9 @@ function App() {
   });
 
   const [searchInput, setSearchInput] = useState("");
-  const [appliedSearchText, setAppliedSearchText] =
-    useState("");
+  const [appliedSearchText, setAppliedSearchText] = useState("");
 
-  const [selectedMonth, setSelectedMonth] =
-    useState(getCurrentMonth);
+  const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth);
 
   const [darkMode, setDarkMode] = useState(false);
 
@@ -145,17 +150,17 @@ function App() {
 
         <button
           type="button"
-          onClick={() =>
-            setDarkMode((currentMode) => !currentMode)
-          }
+          onClick={() => setDarkMode((currentMode) => !currentMode)}
         >
           {darkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}
         </button>
+
+        <button type="button" className="logout-button" onClick={onLogout}>
+          Logout
+        </button>
       </div>
 
-      {apiError && (
-        <p className="api-error">{apiError}</p>
-      )}
+      {apiError && <p className="api-error">{apiError}</p>}
 
       <div className="top-controls">
         <OpeningBalanceField
@@ -165,9 +170,7 @@ function App() {
 
         <select
           value={selectedMonth}
-          onChange={(event) =>
-            setSelectedMonth(event.target.value)
-          }
+          onChange={(event) => setSelectedMonth(event.target.value)}
         >
           <option value="all">All Months</option>
 
@@ -182,14 +185,10 @@ function App() {
           <input
             type="text"
             placeholder={`Search ${
-              selectedMonth === "all"
-                ? "all"
-                : selectedMonth
+              selectedMonth === "all" ? "all" : selectedMonth
             } transactions by source...`}
             value={searchInput}
-            onChange={(event) =>
-              setSearchInput(event.target.value)
-            }
+            onChange={(event) => setSearchInput(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === "Enter") {
                 handleSearch();
@@ -198,17 +197,11 @@ function App() {
           />
 
           <div className="search-buttons">
-            <button
-              type="button"
-              onClick={handleSearch}
-            >
+            <button type="button" onClick={handleSearch}>
               Search
             </button>
 
-            <button
-              type="button"
-              onClick={handleClearSearch}
-            >
+            <button type="button" onClick={handleClearSearch}>
               Clear
             </button>
           </div>
@@ -289,6 +282,21 @@ function App() {
       <TransactionChart data={chartData} />
     </div>
   );
+}
+
+function App() {
+  const [token, setToken] = useState<string | null>(() => getAccessToken());
+
+  const handleLogout = () => {
+    removeAccessToken();
+    setToken(null);
+  };
+
+  if (!token) {
+    return <AuthForm apiUrl={API_URL} onLogin={setToken} />;
+  }
+
+  return <ExpenseTrackerApp onLogout={handleLogout} />;
 }
 
 export default App;

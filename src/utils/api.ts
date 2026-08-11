@@ -1,17 +1,36 @@
-const API_KEY = import.meta.env.VITE_API_KEY;
+const TOKEN_KEY = "access_token";
 
-export const apiFetch = (
+export const getAccessToken = () => {
+  return sessionStorage.getItem(TOKEN_KEY);
+};
+
+export const setAccessToken = (token: string) => {
+  sessionStorage.setItem(TOKEN_KEY, token);
+};
+
+export const removeAccessToken = () => {
+  sessionStorage.removeItem(TOKEN_KEY);
+};
+export const apiFetch = async (
   input: RequestInfo | URL,
   init: RequestInit = {},
 ) => {
   const headers = new Headers(init.headers);
+  const token = getAccessToken();
 
-  if (API_KEY) {
-    headers.set("X-API-Key", API_KEY);
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
   }
 
-  return fetch(input, {
+  const response = await fetch(input, {
     ...init,
     headers,
   });
+
+  if (response.status === 401) {
+    removeAccessToken();
+    window.location.reload();
+  }
+
+  return response;
 };

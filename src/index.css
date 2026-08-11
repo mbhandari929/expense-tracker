@@ -29,3 +29,17 @@ input,
 select {
   font: inherit;
 }
+.header .logout-button {
+  margin-left: 12px;
+  padding: 10px 18px;
+  background: #dc2626;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.header .logout-button:hover {
+  background: #b91c1c;
+}

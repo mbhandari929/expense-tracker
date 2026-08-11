@@ -248,7 +248,7 @@ export const useBackup = ({
             ? (backup.monthlyBudgets as MonthlyBudgets)
             : {};
         const shouldReplace = window.confirm(
-         "Importing this backup will replace all existing transactions and settings. Do you want to continue?",
+         "Importing this backup will replace your existing transactions and settings. Do you want to continue?"
        );
          if (!shouldReplace) {
         return;
