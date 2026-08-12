@@ -151,3 +151,77 @@
   color: #dc2626;
   font-size: 13px;
 }
+/* Forgot Password */
+
+.auth-forgot-button {
+  width: 100%;
+  margin-top: 12px;
+  padding: 8px;
+
+  border: none;
+  background: transparent;
+
+  color: #2563eb;
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.auth-forgot-button:hover {
+  text-decoration: underline;
+}
+
+.auth-forgot-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+
+/* Success Message */
+
+.auth-success {
+  margin: 0;
+  padding: 10px 12px;
+
+  border-radius: 8px;
+  background: #dcfce7;
+
+  color: #166534;
+  font-size: 14px;
+  text-align: center;
+}
+
+
+/* Reset Password */
+
+.auth-card input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+
+/* Dark Mode */
+
+.dark .auth-success {
+  background: #14532d;
+  color: #dcfce7;
+}
+
+.dark .auth-forgot-button {
+  color: #93c5fd;
+}
+
+
+/* Mobile */
+
+@media (max-width: 480px) {
+  .auth-forgot-button {
+    font-size: 13px;
+  }
+
+  .auth-success {
+    font-size: 13px;
+  }
+}

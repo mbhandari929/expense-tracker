@@ -1,8 +1,10 @@
 import { useState } from "react";
-import AuthForm from "./components/AuthForm";
 import ActionButtons from "./components/ActionButtons";
+import AuthForm from "./components/AuthForm";
+import ChangePasswordForm from "./components/ChangePasswordForm";
 import MonthlyBudget from "./components/MonthlyBudget";
 import OpeningBalanceField from "./components/OpeningBalanceField";
+import ResetPasswordForm from "./components/ResetPasswordForm";
 import SummaryCard from "./components/SummaryCard";
 import TransactionChart from "./components/TransactionChart";
 import TransactionForm from "./components/TransactionForm";
@@ -11,7 +13,12 @@ import { useBackup } from "./hooks/useBackup";
 import { useExpenseData } from "./hooks/useExpenseData";
 import { useTransactionForm } from "./hooks/useTransactionForm";
 import { useTransactionSummary } from "./hooks/useTransactionSummary";
-import { getAccessToken, removeAccessToken } from "./utils/api";
+
+import {
+  getAccessToken,
+  removeAccessToken,
+} from "./utils/api";
+
 import "./App.css";
 
 const API_URL = import.meta.env.VITE_API_URL || "/api";
@@ -19,17 +26,18 @@ const API_URL = import.meta.env.VITE_API_URL || "/api";
 const getCurrentMonth = () => {
   const today = new Date();
 
-  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(
-    2,
-    "0",
-  )}`;
+  return `${today.getFullYear()}-${String(
+    today.getMonth() + 1,
+  ).padStart(2, "0")}`;
 };
 
 type ExpenseTrackerAppProps = {
   onLogout: () => void;
 };
 
-function ExpenseTrackerApp({ onLogout }: ExpenseTrackerAppProps) {
+function ExpenseTrackerApp({
+  onLogout,
+}: ExpenseTrackerAppProps) {
   const {
     openingBalance,
     setOpeningBalance,
@@ -77,7 +85,11 @@ function ExpenseTrackerApp({ onLogout }: ExpenseTrackerAppProps) {
     setExpenseSources,
   });
 
-  const { exportCSV, exportJSON, importJSON } = useBackup({
+  const {
+    exportCSV,
+    exportJSON,
+    importJSON,
+  } = useBackup({
     apiUrl: API_URL,
     incomes,
     expenses,
@@ -94,11 +106,15 @@ function ExpenseTrackerApp({ onLogout }: ExpenseTrackerAppProps) {
   });
 
   const [searchInput, setSearchInput] = useState("");
-  const [appliedSearchText, setAppliedSearchText] = useState("");
-
-  const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth);
-
+  const [appliedSearchText, setAppliedSearchText] =
+    useState("");
+  const [selectedMonth, setSelectedMonth] =
+    useState(getCurrentMonth);
   const [darkMode, setDarkMode] = useState(false);
+  const [
+    showChangePassword,
+    setShowChangePassword,
+  ] = useState(false);
 
   const {
     months,
@@ -143,6 +159,11 @@ function ExpenseTrackerApp({ onLogout }: ExpenseTrackerAppProps) {
     }
   };
 
+  const handlePasswordChangeSuccess = () => {
+    setShowChangePassword(false);
+    onLogout();
+  };
+
   return (
     <div className={darkMode ? "app dark" : "app"}>
       <div className="header">
@@ -150,17 +171,51 @@ function ExpenseTrackerApp({ onLogout }: ExpenseTrackerAppProps) {
 
         <button
           type="button"
-          onClick={() => setDarkMode((currentMode) => !currentMode)}
+          onClick={() =>
+            setDarkMode(
+              (currentMode) => !currentMode,
+            )
+          }
         >
-          {darkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}
+          {darkMode
+            ? "☀️ Light Mode"
+            : "🌙 Dark Mode"}
         </button>
 
-        <button type="button" className="logout-button" onClick={onLogout}>
+        <button
+          type="button"
+          className="change-password-button"
+          onClick={() =>
+            setShowChangePassword(true)
+          }
+        >
+          Change Password
+        </button>
+
+        <button
+          type="button"
+          className="logout-button"
+          onClick={onLogout}
+        >
           Logout
         </button>
       </div>
 
-      {apiError && <p className="api-error">{apiError}</p>}
+      {showChangePassword && (
+        <ChangePasswordForm
+          apiUrl={API_URL}
+          onClose={() =>
+            setShowChangePassword(false)
+          }
+          onSuccess={
+            handlePasswordChangeSuccess
+          }
+        />
+      )}
+
+      {apiError && (
+        <p className="api-error">{apiError}</p>
+      )}
 
       <div className="top-controls">
         <OpeningBalanceField
@@ -170,12 +225,19 @@ function ExpenseTrackerApp({ onLogout }: ExpenseTrackerAppProps) {
 
         <select
           value={selectedMonth}
-          onChange={(event) => setSelectedMonth(event.target.value)}
+          onChange={(event) =>
+            setSelectedMonth(event.target.value)
+          }
         >
-          <option value="all">All Months</option>
+          <option value="all">
+            All Months
+          </option>
 
           {months.map((month) => (
-            <option key={month} value={month}>
+            <option
+              key={month}
+              value={month}
+            >
               {month}
             </option>
           ))}
@@ -185,10 +247,14 @@ function ExpenseTrackerApp({ onLogout }: ExpenseTrackerAppProps) {
           <input
             type="text"
             placeholder={`Search ${
-              selectedMonth === "all" ? "all" : selectedMonth
+              selectedMonth === "all"
+                ? "all"
+                : selectedMonth
             } transactions by source...`}
             value={searchInput}
-            onChange={(event) => setSearchInput(event.target.value)}
+            onChange={(event) =>
+              setSearchInput(event.target.value)
+            }
             onKeyDown={(event) => {
               if (event.key === "Enter") {
                 handleSearch();
@@ -197,11 +263,17 @@ function ExpenseTrackerApp({ onLogout }: ExpenseTrackerAppProps) {
           />
 
           <div className="search-buttons">
-            <button type="button" onClick={handleSearch}>
+            <button
+              type="button"
+              onClick={handleSearch}
+            >
               Search
             </button>
 
-            <button type="button" onClick={handleClearSearch}>
+            <button
+              type="button"
+              onClick={handleClearSearch}
+            >
               Clear
             </button>
           </div>
@@ -285,18 +357,55 @@ function ExpenseTrackerApp({ onLogout }: ExpenseTrackerAppProps) {
 }
 
 function App() {
-  const [token, setToken] = useState<string | null>(() => getAccessToken());
+  const params = new URLSearchParams(
+    window.location.search,
+  );
+
+  const resetToken = params.get("token");
+
+  const [token, setToken] =
+    useState<string | null>(() =>
+      getAccessToken(),
+    );
 
   const handleLogout = () => {
     removeAccessToken();
     setToken(null);
   };
 
-  if (!token) {
-    return <AuthForm apiUrl={API_URL} onLogin={setToken} />;
+  const handleResetSuccess = () => {
+    window.history.replaceState({}, "", "/");
+    window.location.reload();
+  };
+
+  if (
+    window.location.pathname ===
+      "/reset-password" &&
+    resetToken
+  ) {
+    return (
+      <ResetPasswordForm
+        apiUrl={API_URL}
+        resetToken={resetToken}
+        onSuccess={handleResetSuccess}
+      />
+    );
   }
 
-  return <ExpenseTrackerApp onLogout={handleLogout} />;
+  if (!token) {
+    return (
+      <AuthForm
+        apiUrl={API_URL}
+        onLogin={setToken}
+      />
+    );
+  }
+
+  return (
+    <ExpenseTrackerApp
+      onLogout={handleLogout}
+    />
+  );
 }
 
 export default App;
