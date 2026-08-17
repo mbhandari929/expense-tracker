@@ -29,7 +29,8 @@ input,
 select {
   font: inherit;
 }
-.header .logout-button {
+
+.app-header .logout-button {
   margin-left: 12px;
   padding: 10px 18px;
   background: #dc2626;
@@ -40,6 +41,6 @@ select {
   cursor: pointer;
 }
 
-.header .logout-button:hover {
+.app-header .logout-button:hover {
   background: #b91c1c;
 }

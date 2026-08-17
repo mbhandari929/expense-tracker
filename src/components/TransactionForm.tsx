@@ -1,4 +1,4 @@
-type TransactionType = "income" | "expense";
+import type { TransactionType } from "../types/transaction";
 
 type TransactionFormProps = {
   type: TransactionType;
@@ -8,6 +8,7 @@ type TransactionFormProps = {
   newSource: string;
   sourceOptions: string[];
   isEditing: boolean;
+  formError: string;
   onTypeChange: (type: TransactionType) => void;
   onDateChange: (date: string) => void;
   onSourceChange: (source: string) => void;
@@ -26,6 +27,7 @@ function TransactionForm({
   newSource,
   sourceOptions,
   isEditing,
+  formError,
   onTypeChange,
   onDateChange,
   onSourceChange,
@@ -39,10 +41,9 @@ function TransactionForm({
 
   const today = `${now.getFullYear()}-${String(
     now.getMonth() + 1,
-  ).padStart(2, "0")}-${String(now.getDate()).padStart(
-    2,
-    "0",
-  )}`;
+  ).padStart(2, "0")}-${String(
+    now.getDate(),
+  ).padStart(2, "0")}`;
 
   return (
     <div className="source-area compact-area single-transaction-area">
@@ -53,7 +54,11 @@ function TransactionForm({
           onSubmit();
         }}
       >
-        <h2>{isEditing ? "Edit Transaction" : "Add Transaction"}</h2>
+        <h2>
+          {isEditing
+            ? "Edit Transaction"
+            : "Add Transaction"}
+        </h2>
 
         <label htmlFor="transaction-type">
           Transaction Type
@@ -64,7 +69,9 @@ function TransactionForm({
           value={type}
           disabled={isEditing}
           onChange={(event) =>
-            onTypeChange(event.target.value as TransactionType)
+            onTypeChange(
+              event.target.value as TransactionType,
+            )
           }
         >
           <option value="income">Income</option>
@@ -92,38 +99,37 @@ function TransactionForm({
             : "Add Expense Source"}
         </label>
 
-       
-<div className="source-input-row">
-  <input
-    id="new-source"
-    type="text"
-    value={newSource}
-    onChange={(event) =>
-      onNewSourceChange(event.target.value)
-    }
-    placeholder={
-      type === "income"
-        ? "Add income source"
-        : "Add expense source"
-    }
-  />
+        <div className="source-input-row">
+          <input
+            id="new-source"
+            type="text"
+            value={newSource}
+            onChange={(event) =>
+              onNewSourceChange(event.target.value)
+            }
+            placeholder={
+              type === "income"
+                ? "Add income source"
+                : "Add expense source"
+            }
+          />
 
-  <button type="button" onClick={onAddSource}>
-    {type === "income"
-      ? "Add Income Source"
-      : "Add Expense Source"}
-  </button>
-</div>
+          <button
+            type="button"
+            onClick={onAddSource}
+          >
+            {type === "income"
+              ? "Add Income Source"
+              : "Add Expense Source"}
+          </button>
+        </div>
 
-<p className="source-save-note">
-  New sources are not permanently saved until you click Save Settings.
-</p>
+        <label htmlFor="transaction-source">
+          {type === "income"
+            ? "Income Source"
+            : "Expense Source"}
+        </label>
 
-<label htmlFor="transaction-source">
-  {type === "income"
-    ? "Income Source"
-    : "Expense Source"}
-</label>
         <select
           id="transaction-source"
           value={source}
@@ -168,6 +174,12 @@ function TransactionForm({
           placeholder="Amount"
         />
 
+        {formError && (
+          <p className="form-error" role="alert">
+            {formError}
+          </p>
+        )}
+
         <div className="transaction-form-actions">
           <button type="submit">
             {isEditing
@@ -176,7 +188,10 @@ function TransactionForm({
           </button>
 
           {isEditing && (
-            <button type="button" onClick={onCancel}>
+            <button
+              type="button"
+              onClick={onCancel}
+            >
               Cancel
             </button>
           )}

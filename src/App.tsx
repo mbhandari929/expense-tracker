@@ -1,7 +1,12 @@
 import { useState } from "react";
+
 import ActionButtons from "./components/ActionButtons";
+import AppModal, {
+  type AppModalVariant,
+} from "./components/AppModal";
 import AuthForm from "./components/AuthForm";
 import ChangePasswordForm from "./components/ChangePasswordForm";
+import Header from "./components/Header";
 import MonthlyBudget from "./components/MonthlyBudget";
 import OpeningBalanceField from "./components/OpeningBalanceField";
 import ResetPasswordForm from "./components/ResetPasswordForm";
@@ -9,11 +14,13 @@ import SummaryCard from "./components/SummaryCard";
 import TransactionChart from "./components/TransactionChart";
 import TransactionForm from "./components/TransactionForm";
 import TransactionStatement from "./components/TransactionStatement";
+
 import { useBackup } from "./hooks/useBackup";
 import { useExpenseData } from "./hooks/useExpenseData";
 import { useTransactionForm } from "./hooks/useTransactionForm";
 import { useTransactionSummary } from "./hooks/useTransactionSummary";
 
+import type { Item } from "./types/transaction";
 import {
   getAccessToken,
   removeAccessToken,
@@ -33,6 +40,22 @@ const getCurrentMonth = () => {
 
 type ExpenseTrackerAppProps = {
   onLogout: () => void;
+};
+
+type DialogMessage = {
+  title: string;
+  message: string;
+  type: "success" | "error";
+};
+
+type ModalState = {
+  title: string;
+  message: string;
+  variant: AppModalVariant;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  onConfirm: () => void;
+  onCancel?: () => void;
 };
 
 function ExpenseTrackerApp({
@@ -55,6 +78,72 @@ function ExpenseTrackerApp({
     saveSettings,
   } = useExpenseData(API_URL);
 
+  const [searchInput, setSearchInput] = useState("");
+  const [appliedSearchText, setAppliedSearchText] =
+    useState("");
+
+  const [selectedMonth, setSelectedMonth] =
+    useState(getCurrentMonth);
+
+  const [darkMode, setDarkMode] = useState(false);
+
+  const [
+    showChangePassword,
+    setShowChangePassword,
+  ] = useState(false);
+
+  const [modal, setModal] =
+    useState<ModalState | null>(null);
+
+  const showMessage = ({
+    title,
+    message,
+    type,
+  }: DialogMessage) => {
+    setModal({
+      title,
+      message,
+      variant: type,
+      confirmLabel: "OK",
+      onConfirm: () => setModal(null),
+    });
+  };
+
+  const confirmAction = (
+    title: string,
+    message: string,
+    confirmLabel = "Continue",
+  ) =>
+    new Promise<boolean>((resolve) => {
+      setModal({
+        title,
+        message,
+        variant: "warning",
+        confirmLabel,
+        cancelLabel: "Cancel",
+        onConfirm: () => {
+          setModal(null);
+          resolve(true);
+        },
+        onCancel: () => {
+          setModal(null);
+          resolve(false);
+        },
+      });
+    });
+
+  const saveSources = (
+    nextIncomeSources: string[],
+    nextExpenseSources: string[],
+  ) => {
+    return saveSettings({
+      openingBalance,
+      incomeSources: nextIncomeSources,
+      expenseSources: nextExpenseSources,
+      monthlyBudgets,
+    });
+  };
+
   const {
     transactionType,
     transactionText,
@@ -62,6 +151,7 @@ function ExpenseTrackerApp({
     transactionDate,
     newSource,
     editId,
+    formError,
     sourceOptions,
     setTransactionText,
     setTransactionAmount,
@@ -83,6 +173,7 @@ function ExpenseTrackerApp({
     setExpenses,
     setIncomeSources,
     setExpenseSources,
+    saveSources,
   });
 
   const {
@@ -103,18 +194,9 @@ function ExpenseTrackerApp({
     setIncomeSources,
     setExpenseSources,
     setOpeningBalance,
+    confirmAction,
+    showMessage,
   });
-
-  const [searchInput, setSearchInput] = useState("");
-  const [appliedSearchText, setAppliedSearchText] =
-    useState("");
-  const [selectedMonth, setSelectedMonth] =
-    useState(getCurrentMonth);
-  const [darkMode, setDarkMode] = useState(false);
-  const [
-    showChangePassword,
-    setShowChangePassword,
-  ] = useState(false);
 
   const {
     months,
@@ -153,206 +235,297 @@ function ExpenseTrackerApp({
     });
 
     if (saved) {
-      alert("Settings saved successfully.");
-    } else {
-      alert("Settings could not be saved.");
+      showMessage({
+        title: "Settings Saved",
+        message: "Your settings were saved.",
+        type: "success",
+      });
+      return;
+    }
+
+    showMessage({
+      title: "Save Failed",
+      message: "Settings could not be saved.",
+      type: "error",
+    });
+  };
+
+  const handleOpeningBalanceBlur = async () => {
+    const saved = await saveSettings({
+      openingBalance,
+      incomeSources,
+      expenseSources,
+      monthlyBudgets,
+    });
+
+    if (!saved) {
+      showMessage({
+        title: "Save Failed",
+        message:
+          "Opening balance could not be saved.",
+        type: "error",
+      });
+    }
+  };
+
+  const handleDeleteTransaction = async (
+    item: Item,
+  ) => {
+    const confirmed = await confirmAction(
+      "Delete Transaction",
+      `Delete "${item.text}"? This action cannot be undone.`,
+      "Delete",
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    const deleted = await deleteTransaction(item);
+
+    if (!deleted) {
+      showMessage({
+        title: "Delete Failed",
+        message:
+          "The transaction could not be deleted.",
+        type: "error",
+      });
     }
   };
 
   const handlePasswordChangeSuccess = () => {
     setShowChangePassword(false);
-    onLogout();
+
+    setModal({
+      title: "Password Changed",
+      message:
+        "Your password was changed successfully. Please log in again.",
+      variant: "success",
+      confirmLabel: "OK",
+      onConfirm: () => {
+        setModal(null);
+        onLogout();
+      },
+    });
   };
 
   return (
-    <div className={darkMode ? "app dark" : "app"}>
-      <div className="header">
-        <h1>💰 Expense Tracker App</h1>
-
-        <button
-          type="button"
-          onClick={() =>
+    <>
+      <div
+        className={darkMode ? "app dark" : "app"}
+      >
+        <Header
+          darkMode={darkMode}
+          onToggleDarkMode={() =>
             setDarkMode(
               (currentMode) => !currentMode,
             )
           }
-        >
-          {darkMode
-            ? "☀️ Light Mode"
-            : "🌙 Dark Mode"}
-        </button>
-
-        <button
-          type="button"
-          className="change-password-button"
-          onClick={() =>
+          onChangePassword={() =>
             setShowChangePassword(true)
           }
-        >
-          Change Password
-        </button>
-
-        <button
-          type="button"
-          className="logout-button"
-          onClick={onLogout}
-        >
-          Logout
-        </button>
-      </div>
-
-      {showChangePassword && (
-        <ChangePasswordForm
-          apiUrl={API_URL}
-          onClose={() =>
-            setShowChangePassword(false)
-          }
-          onSuccess={
-            handlePasswordChangeSuccess
-          }
-        />
-      )}
-
-      {apiError && (
-        <p className="api-error">{apiError}</p>
-      )}
-
-      <div className="top-controls">
-        <OpeningBalanceField
-          value={openingBalance}
-          onChange={setOpeningBalance}
+          onLogout={onLogout}
         />
 
-        <select
-          value={selectedMonth}
-          onChange={(event) =>
-            setSelectedMonth(event.target.value)
-          }
-        >
-          <option value="all">
-            All Months
-          </option>
-
-          {months.map((month) => (
-            <option
-              key={month}
-              value={month}
-            >
-              {month}
-            </option>
-          ))}
-        </select>
-
-        <div className="search-controls">
-          <input
-            type="text"
-            placeholder={`Search ${
-              selectedMonth === "all"
-                ? "all"
-                : selectedMonth
-            } transactions by source...`}
-            value={searchInput}
-            onChange={(event) =>
-              setSearchInput(event.target.value)
+        {showChangePassword && (
+          <ChangePasswordForm
+            apiUrl={API_URL}
+            onClose={() =>
+              setShowChangePassword(false)
             }
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                handleSearch();
-              }
-            }}
+            onSuccess={
+              handlePasswordChangeSuccess
+            }
+          />
+        )}
+
+        {apiError && (
+          <p className="api-error">
+            {apiError}
+          </p>
+        )}
+
+        <div className="top-controls">
+          <OpeningBalanceField
+            value={openingBalance}
+            onChange={setOpeningBalance}
+            onBlur={() =>
+              void handleOpeningBalanceBlur()
+            }
           />
 
-          <div className="search-buttons">
-            <button
-              type="button"
-              onClick={handleSearch}
-            >
-              Search
-            </button>
+          <select
+            value={selectedMonth}
+            onChange={(event) =>
+              setSelectedMonth(
+                event.target.value,
+              )
+            }
+          >
+            <option value="all">
+              All Months
+            </option>
 
-            <button
-              type="button"
-              onClick={handleClearSearch}
-            >
-              Clear
-            </button>
+            {months.map((month) => (
+              <option
+                key={month}
+                value={month}
+              >
+                {month}
+              </option>
+            ))}
+          </select>
+
+          <div className="search-controls">
+            <input
+              type="text"
+              placeholder={`Search ${
+                selectedMonth === "all"
+                  ? "all"
+                  : selectedMonth
+              } transactions by source...`}
+              value={searchInput}
+              onChange={(event) =>
+                setSearchInput(
+                  event.target.value,
+                )
+              }
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  handleSearch();
+                }
+              }}
+            />
+
+            <div className="search-buttons">
+              <button
+                type="button"
+                onClick={handleSearch}
+              >
+                Search
+              </button>
+
+              <button
+                type="button"
+                onClick={handleClearSearch}
+              >
+                Clear
+              </button>
+            </div>
           </div>
+
+          <button
+            type="button"
+            className="save-settings-button"
+            onClick={() =>
+              void handleSaveSettings()
+            }
+          >
+            Save Settings
+          </button>
         </div>
 
-        <button
-          type="button"
-          className="save-settings-button"
-          onClick={handleSaveSettings}
+        <div className="summary-area">
+          <SummaryCard
+            title="Carried Opening Balance"
+            amount={selectedOpeningBalance}
+          />
+
+          <SummaryCard
+            title="Total Income"
+            amount={totalIncome}
+            className="income"
+          />
+
+          <SummaryCard
+            title="Total Expense"
+            amount={totalExpense}
+            className="expense"
+          />
+
+          <SummaryCard
+            title="Closing Balance"
+            amount={balance}
+            className="balance"
+          />
+        </div>
+
+        <MonthlyBudget
+          expenses={expenses}
+          selectedMonth={selectedMonth}
+          monthlyBudgets={monthlyBudgets}
+          setMonthlyBudgets={
+            setMonthlyBudgets
+          }
+        />
+
+        <ActionButtons
+          onExportCSV={exportCSV}
+          onBackupJSON={exportJSON}
+          onImportJSON={importJSON}
+        />
+
+        <TransactionForm
+          type={transactionType}
+          date={transactionDate}
+          source={transactionText}
+          amount={transactionAmount}
+          newSource={newSource}
+          sourceOptions={sourceOptions}
+          isEditing={editId !== null}
+          formError={formError}
+          onTypeChange={
+            changeTransactionType
+          }
+          onDateChange={
+            setTransactionDate
+          }
+          onSourceChange={
+            setTransactionText
+          }
+          onAmountChange={
+            setTransactionAmount
+          }
+          onNewSourceChange={setNewSource}
+          onAddSource={() =>
+            void addSource()
+          }
+          onSubmit={() =>
+            void saveTransaction()
+          }
+          onCancel={resetForm}
+        />
+
+        <TransactionStatement
+          items={filteredTransactions}
+          report={monthlyReport}
+          onSave={updateTransactionInline}
+          onDelete={(item) =>
+            void handleDeleteTransaction(item)
+          }
+        />
+
+        <TransactionChart
+          data={chartData}
+        />
+      </div>
+
+      {modal && (
+        <div
+          className={darkMode ? "dark" : ""}
         >
-          Save Settings
-        </button>
-      </div>
-
-      <div className="summary-area">
-        <SummaryCard
-          title="Carried Opening Balance"
-          amount={selectedOpeningBalance}
-        />
-
-        <SummaryCard
-          title="Total Income"
-          amount={totalIncome}
-          className="income"
-        />
-
-        <SummaryCard
-          title="Total Expense"
-          amount={totalExpense}
-          className="expense"
-        />
-
-        <SummaryCard
-          title="Closing Balance"
-          amount={balance}
-          className="balance"
-        />
-      </div>
-
-      <MonthlyBudget
-        expenses={expenses}
-        selectedMonth={selectedMonth}
-        monthlyBudgets={monthlyBudgets}
-        setMonthlyBudgets={setMonthlyBudgets}
-      />
-
-      <ActionButtons
-        onExportCSV={exportCSV}
-        onBackupJSON={exportJSON}
-        onImportJSON={importJSON}
-      />
-
-      <TransactionForm
-        type={transactionType}
-        date={transactionDate}
-        source={transactionText}
-        amount={transactionAmount}
-        newSource={newSource}
-        sourceOptions={sourceOptions}
-        isEditing={editId !== null}
-        onTypeChange={changeTransactionType}
-        onDateChange={setTransactionDate}
-        onSourceChange={setTransactionText}
-        onAmountChange={setTransactionAmount}
-        onNewSourceChange={setNewSource}
-        onAddSource={addSource}
-        onSubmit={saveTransaction}
-        onCancel={resetForm}
-      />
-
-      <TransactionStatement
-        items={filteredTransactions}
-        report={monthlyReport}
-        onSave={updateTransactionInline}
-        onDelete={deleteTransaction}
-      />
-
-      <TransactionChart data={chartData} />
-    </div>
+          <AppModal
+            title={modal.title}
+            message={modal.message}
+            variant={modal.variant}
+            confirmLabel={modal.confirmLabel}
+            cancelLabel={modal.cancelLabel}
+            onConfirm={modal.onConfirm}
+            onCancel={modal.onCancel}
+          />
+        </div>
+      )}
+    </>
   );
 }
 
@@ -374,7 +547,12 @@ function App() {
   };
 
   const handleResetSuccess = () => {
-    window.history.replaceState({}, "", "/");
+    window.history.replaceState(
+      {},
+      "",
+      "/",
+    );
+
     window.location.reload();
   };
 

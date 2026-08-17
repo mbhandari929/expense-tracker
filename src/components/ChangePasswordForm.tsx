@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
-import "./ChangePasswordForm.css";
+
 import { apiFetch } from "../utils/api";
+import "./ChangePasswordForm.css";
 
 type ChangePasswordFormProps = {
   apiUrl: string;
@@ -9,10 +10,10 @@ type ChangePasswordFormProps = {
 };
 
 type ChangePasswordResponse = {
-  message?: string;
+  message?: string | string[];
 };
 
-export default function ChangePasswordForm({
+function ChangePasswordForm({
   apiUrl,
   onClose,
   onSuccess,
@@ -20,7 +21,6 @@ export default function ChangePasswordForm({
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -28,7 +28,6 @@ export default function ChangePasswordForm({
     event: FormEvent<HTMLFormElement>,
   ) => {
     event.preventDefault();
-
     setError("");
 
     if (newPassword !== confirmPassword) {
@@ -64,16 +63,17 @@ export default function ChangePasswordForm({
         (await response.json()) as ChangePasswordResponse;
 
       if (!response.ok) {
-        setError(
-          data.message || "Password change failed.",
-        );
+        const errorMessage = Array.isArray(data.message)
+          ? data.message.join(" ")
+          : data.message;
+
+        setError(errorMessage || "Password change failed.");
         return;
       }
 
-      alert("Password changed successfully.");
-
       onSuccess();
-    } catch {
+    } catch (error) {
+      console.error("Password change failed:", error);
       setError("Unable to connect to the server.");
     } finally {
       setIsSubmitting(false);
@@ -94,13 +94,13 @@ export default function ChangePasswordForm({
             id="current-password"
             type="password"
             value={currentPassword}
-            onChange={(event) =>
-              setCurrentPassword(event.target.value)
-            }
             minLength={8}
             maxLength={72}
             autoComplete="current-password"
             required
+            onChange={(event) =>
+              setCurrentPassword(event.target.value)
+            }
           />
         </div>
 
@@ -113,13 +113,13 @@ export default function ChangePasswordForm({
             id="new-password"
             type="password"
             value={newPassword}
-            onChange={(event) =>
-              setNewPassword(event.target.value)
-            }
             minLength={8}
             maxLength={72}
             autoComplete="new-password"
             required
+            onChange={(event) =>
+              setNewPassword(event.target.value)
+            }
           />
         </div>
 
@@ -132,21 +132,18 @@ export default function ChangePasswordForm({
             id="confirm-password"
             type="password"
             value={confirmPassword}
-            onChange={(event) =>
-              setConfirmPassword(event.target.value)
-            }
             minLength={8}
             maxLength={72}
             autoComplete="new-password"
             required
+            onChange={(event) =>
+              setConfirmPassword(event.target.value)
+            }
           />
         </div>
 
         {error && (
-          <p
-            className="change-password-error"
-            role="alert"
-          >
+          <p className="change-password-error" role="alert">
             {error}
           </p>
         )}
@@ -156,9 +153,7 @@ export default function ChangePasswordForm({
             type="submit"
             disabled={isSubmitting}
           >
-            {isSubmitting
-              ? "Changing..."
-              : "Change Password"}
+            {isSubmitting ? "Changing..." : "Change Password"}
           </button>
 
           <button
@@ -173,3 +168,5 @@ export default function ChangePasswordForm({
     </div>
   );
 }
+
+export default ChangePasswordForm;

@@ -1,20 +1,42 @@
-import type { Dispatch, SetStateAction } from "react";
-
 type HeaderProps = {
   darkMode: boolean;
-  setDarkMode: Dispatch<SetStateAction<boolean>>;
+  onToggleDarkMode: () => void;
+  onChangePassword: () => void;
+  onLogout: () => void;
 };
 
-function Header({ darkMode, setDarkMode }: HeaderProps) {
+function Header({
+  darkMode,
+  onToggleDarkMode,
+  onChangePassword,
+  onLogout,
+}: HeaderProps) {
   return (
     <header className="app-header">
       <h1>💰 Expense Tracker App</h1>
 
       <button
+        type="button"
         className="dark-btn"
-        onClick={() => setDarkMode(!darkMode)}
+        onClick={onToggleDarkMode}
       >
         {darkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}
+      </button>
+
+      <button
+        type="button"
+        className="change-password-button"
+        onClick={onChangePassword}
+      >
+        Change Password
+      </button>
+
+      <button
+        type="button"
+        className="logout-button"
+        onClick={onLogout}
+      >
+        Logout
       </button>
     </header>
   );

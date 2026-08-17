@@ -1,9 +1,16 @@
-import { apiFetch } from "../utils/api";
-import { useCallback, useEffect, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+
 import type {
   Item,
   TransactionType,
 } from "../types/transaction";
+import { apiFetch } from "../utils/api";
+import { isRecord } from "../utils/typeGuards";
 
 const DEFAULT_INCOME_SOURCES = [
   "Salary",
@@ -35,16 +42,6 @@ type SettingsData = {
   incomeSources?: unknown;
   expenseSources?: unknown;
   monthlyBudgets?: unknown;
-};
-
-const isRecord = (
-  value: unknown,
-): value is Record<string, unknown> => {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    !Array.isArray(value)
-  );
 };
 
 const normalizeApiTransactions = (
@@ -100,7 +97,9 @@ const normalizeSources = (
       typeof source === "string",
   );
 
-  return sources.length > 0 ? sources : fallback;
+  return sources.length > 0
+    ? sources
+    : fallback;
 };
 
 const normalizeMonthlyBudgets = (
@@ -129,47 +128,44 @@ const normalizeMonthlyBudgets = (
 };
 
 const normalizeSettings = (
-  settingsData: SettingsData,
-): SettingsPayload => {
-  return {
-    openingBalance:
-      Number(settingsData.openingBalance) || 0,
+  settings: SettingsData,
+): SettingsPayload => ({
+  openingBalance:
+    Number(settings.openingBalance) || 0,
 
-    incomeSources: normalizeSources(
-      settingsData.incomeSources,
-      DEFAULT_INCOME_SOURCES,
-    ),
+  incomeSources: normalizeSources(
+    settings.incomeSources,
+    DEFAULT_INCOME_SOURCES,
+  ),
 
-    expenseSources: normalizeSources(
-      settingsData.expenseSources,
-      DEFAULT_EXPENSE_SOURCES,
-    ),
+  expenseSources: normalizeSources(
+    settings.expenseSources,
+    DEFAULT_EXPENSE_SOURCES,
+  ),
 
-    monthlyBudgets: normalizeMonthlyBudgets(
-      settingsData.monthlyBudgets,
-    ),
-  };
-};
+  monthlyBudgets: normalizeMonthlyBudgets(
+    settings.monthlyBudgets,
+  ),
+});
 
 const loadStoredSettings =
   (): SettingsPayload | null => {
     try {
-      const storedSettings = localStorage.getItem(
+      const stored = localStorage.getItem(
         SETTINGS_STORAGE_KEY,
       );
 
-      if (!storedSettings) {
+      if (!stored) {
         return null;
       }
 
-      const parsedSettings: unknown =
-        JSON.parse(storedSettings);
+      const parsed: unknown = JSON.parse(stored);
 
-      if (!isRecord(parsedSettings)) {
+      if (!isRecord(parsed)) {
         return null;
       }
 
-      return normalizeSettings(parsedSettings);
+      return normalizeSettings(parsed);
     } catch (error) {
       console.error(
         "Browser settings load failed:",
@@ -189,18 +185,32 @@ const storeSettings = (
   );
 };
 
-export const useExpenseData = (apiUrl: string) => {
-  const [openingBalance, setOpeningBalance] =
-    useState(0);
+export const useExpenseData = (
+  apiUrl: string,
+) => {
+  const [
+    openingBalance,
+    setOpeningBalance,
+  ] = useState(0);
 
-  const [incomeSources, setIncomeSources] =
-    useState<string[]>(DEFAULT_INCOME_SOURCES);
+  const [
+    incomeSources,
+    setIncomeSources,
+  ] = useState<string[]>(
+    DEFAULT_INCOME_SOURCES,
+  );
 
-  const [expenseSources, setExpenseSources] =
-    useState<string[]>(DEFAULT_EXPENSE_SOURCES);
+  const [
+    expenseSources,
+    setExpenseSources,
+  ] = useState<string[]>(
+    DEFAULT_EXPENSE_SOURCES,
+  );
 
-  const [monthlyBudgets, setMonthlyBudgets] =
-    useState<MonthlyBudgets>({});
+  const [
+    monthlyBudgets,
+    setMonthlyBudgets,
+  ] = useState<MonthlyBudgets>({});
 
   const [incomes, setIncomes] =
     useState<Item[]>([]);
@@ -208,16 +218,34 @@ export const useExpenseData = (apiUrl: string) => {
   const [expenses, setExpenses] =
     useState<Item[]>([]);
 
-  const [apiError, setApiError] = useState("");
+  const [apiError, setApiError] =
+    useState("");
+
+  const loadedApiUrlRef =
+    useRef<string | null>(null);
 
   useEffect(() => {
+    if (loadedApiUrlRef.current === apiUrl) {
+      return;
+    }
+
+    loadedApiUrlRef.current = apiUrl;
+
     const applySettings = (
       settings: SettingsPayload,
     ) => {
-      setOpeningBalance(settings.openingBalance);
-      setIncomeSources(settings.incomeSources);
-      setExpenseSources(settings.expenseSources);
-      setMonthlyBudgets(settings.monthlyBudgets);
+      setOpeningBalance(
+        settings.openingBalance,
+      );
+      setIncomeSources(
+        settings.incomeSources,
+      );
+      setExpenseSources(
+        settings.expenseSources,
+      );
+      setMonthlyBudgets(
+        settings.monthlyBudgets,
+      );
     };
 
     const loadData = async () => {
@@ -279,9 +307,10 @@ export const useExpenseData = (apiUrl: string) => {
       }
 
       try {
-        const settingsResponse = await apiFetch(
-          `${apiUrl}/settings`,
-        );
+        const settingsResponse =
+          await apiFetch(
+            `${apiUrl}/settings`,
+          );
 
         if (!settingsResponse.ok) {
           throw new Error(
@@ -308,14 +337,18 @@ export const useExpenseData = (apiUrl: string) => {
         );
       }
 
-      setApiError(errorMessages.join(" "));
+      setApiError(
+        errorMessages.join(" "),
+      );
     };
 
     void loadData();
   }, [apiUrl]);
 
   const saveSettings = useCallback(
-    async (settings: SettingsPayload) => {
+    async (
+      settings: SettingsPayload,
+    ): Promise<boolean> => {
       try {
         storeSettings(settings);
       } catch (error) {
@@ -337,7 +370,8 @@ export const useExpenseData = (apiUrl: string) => {
           {
             method: "PATCH",
             headers: {
-              "Content-Type": "application/json",
+              "Content-Type":
+                "application/json",
             },
             body: JSON.stringify(settings),
           },
