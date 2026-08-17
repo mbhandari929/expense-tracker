@@ -1,7 +1,6 @@
 import {
   useCallback,
   useEffect,
-  useRef,
   useState,
 } from "react";
 
@@ -9,8 +8,17 @@ import type {
   Item,
   TransactionType,
 } from "../types/transaction";
+
+import type {
+  MonthlyBudgets,
+} from "../types/common";
+
 import { apiFetch } from "../utils/api";
 import { isRecord } from "../utils/typeGuards";
+
+export type {
+  MonthlyBudgets,
+} from "../types/common";
 
 const DEFAULT_INCOME_SOURCES = [
   "Salary",
@@ -27,8 +35,6 @@ const DEFAULT_EXPENSE_SOURCES = [
 
 const SETTINGS_STORAGE_KEY =
   "expense-tracker-settings";
-
-export type MonthlyBudgets = Record<string, number>;
 
 export type SettingsPayload = {
   openingBalance: number;
@@ -77,7 +83,7 @@ const normalizeApiTransactions = (
         id: String(id),
         text,
         amount,
-        date,
+        date: date.slice(0, 10),
         type,
       },
     ];
@@ -92,9 +98,16 @@ const normalizeSources = (
     return fallback;
   }
 
-  const sources = value.filter(
-    (source): source is string =>
-      typeof source === "string",
+  const sources = Array.from(
+    new Set(
+      value
+        .filter(
+          (source): source is string =>
+            typeof source === "string",
+        )
+        .map((source) => source.trim())
+        .filter(Boolean),
+    ),
   );
 
   return sources.length > 0
@@ -185,6 +198,12 @@ const storeSettings = (
   );
 };
 
+const isAbortError = (
+  error: unknown,
+): boolean =>
+  error instanceof DOMException &&
+  error.name === "AbortError";
+
 export const useExpenseData = (
   apiUrl: string,
 ) => {
@@ -221,15 +240,9 @@ export const useExpenseData = (
   const [apiError, setApiError] =
     useState("");
 
-  const loadedApiUrlRef =
-    useRef<string | null>(null);
-
   useEffect(() => {
-    if (loadedApiUrlRef.current === apiUrl) {
-      return;
-    }
-
-    loadedApiUrlRef.current = apiUrl;
+    const controller =
+      new AbortController();
 
     const applySettings = (
       settings: SettingsPayload,
@@ -237,12 +250,15 @@ export const useExpenseData = (
       setOpeningBalance(
         settings.openingBalance,
       );
+
       setIncomeSources(
         settings.incomeSources,
       );
+
       setExpenseSources(
         settings.expenseSources,
       );
+
       setMonthlyBudgets(
         settings.monthlyBudgets,
       );
@@ -251,13 +267,34 @@ export const useExpenseData = (
     const loadData = async () => {
       const errorMessages: string[] = [];
 
+      const storedSettings =
+        loadStoredSettings();
+
+      if (
+        storedSettings &&
+        !controller.signal.aborted
+      ) {
+        applySettings(storedSettings);
+      }
+
       try {
         const [
           incomeResponse,
           expenseResponse,
         ] = await Promise.all([
-          apiFetch(`${apiUrl}/income`),
-          apiFetch(`${apiUrl}/expense`),
+          apiFetch(
+            `${apiUrl}/income`,
+            {
+              signal: controller.signal,
+            },
+          ),
+
+          apiFetch(
+            `${apiUrl}/expense`,
+            {
+              signal: controller.signal,
+            },
+          ),
         ]);
 
         if (
@@ -275,6 +312,10 @@ export const useExpenseData = (
         const expenseData: unknown =
           await expenseResponse.json();
 
+        if (controller.signal.aborted) {
+          return;
+        }
+
         setIncomes(
           normalizeApiTransactions(
             incomeData,
@@ -289,6 +330,10 @@ export const useExpenseData = (
           ),
         );
       } catch (error) {
+        if (isAbortError(error)) {
+          return;
+        }
+
         console.error(
           "Transaction data load failed:",
           error,
@@ -299,17 +344,18 @@ export const useExpenseData = (
         );
       }
 
-      const storedSettings =
-        loadStoredSettings();
-
-      if (storedSettings) {
-        applySettings(storedSettings);
+      if (controller.signal.aborted) {
+        return;
       }
 
       try {
         const settingsResponse =
           await apiFetch(
             `${apiUrl}/settings`,
+            {
+              signal:
+                controller.signal,
+            },
           );
 
         if (!settingsResponse.ok) {
@@ -321,12 +367,27 @@ export const useExpenseData = (
         const settingsData =
           (await settingsResponse.json()) as SettingsData;
 
-        const normalizedSettings =
-          normalizeSettings(settingsData);
+        if (controller.signal.aborted) {
+          return;
+        }
 
-        applySettings(normalizedSettings);
-        storeSettings(normalizedSettings);
+        const normalizedSettings =
+          normalizeSettings(
+            settingsData,
+          );
+
+        applySettings(
+          normalizedSettings,
+        );
+
+        storeSettings(
+          normalizedSettings,
+        );
       } catch (error) {
+        if (isAbortError(error)) {
+          return;
+        }
+
         console.error(
           "Settings data load failed:",
           error,
@@ -337,12 +398,18 @@ export const useExpenseData = (
         );
       }
 
-      setApiError(
-        errorMessages.join(" "),
-      );
+      if (!controller.signal.aborted) {
+        setApiError(
+          errorMessages.join(" "),
+        );
+      }
     };
 
     void loadData();
+
+    return () => {
+      controller.abort();
+    };
   }, [apiUrl]);
 
   const saveSettings = useCallback(
@@ -365,17 +432,20 @@ export const useExpenseData = (
       }
 
       try {
-        const response = await apiFetch(
-          `${apiUrl}/settings`,
-          {
-            method: "PATCH",
-            headers: {
-              "Content-Type":
-                "application/json",
+        const response =
+          await apiFetch(
+            `${apiUrl}/settings`,
+            {
+              method: "PATCH",
+              headers: {
+                "Content-Type":
+                  "application/json",
+              },
+              body: JSON.stringify(
+                settings,
+              ),
             },
-            body: JSON.stringify(settings),
-          },
-        );
+          );
 
         if (!response.ok) {
           throw new Error(

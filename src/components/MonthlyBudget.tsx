@@ -1,14 +1,11 @@
 import { useMemo } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { formatCurrency } from "../utils/currency";
-
+import type { MonthlyBudgets } from "../types/common";
 type Expense = {
   amount: number;
   date: string;
 };
-
-type MonthlyBudgets = Record<string, number>;
-
 type MonthlyBudgetProps = {
   expenses: Expense[];
   selectedMonth: string;

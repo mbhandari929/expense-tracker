@@ -29,15 +29,6 @@ import {
 import "./App.css";
 
 const API_URL = import.meta.env.VITE_API_URL || "/api";
-
-const getCurrentMonth = () => {
-  const today = new Date();
-
-  return `${today.getFullYear()}-${String(
-    today.getMonth() + 1,
-  ).padStart(2, "0")}`;
-};
-
 type ExpenseTrackerAppProps = {
   onLogout: () => void;
 };
@@ -83,7 +74,7 @@ function ExpenseTrackerApp({
     useState("");
 
   const [selectedMonth, setSelectedMonth] =
-    useState(getCurrentMonth);
+    useState("all");
 
   const [darkMode, setDarkMode] = useState(false);
 
@@ -210,8 +201,6 @@ function ExpenseTrackerApp({
   } = useTransactionSummary({
     incomes,
     expenses,
-    incomeSources,
-    expenseSources,
     openingBalance,
     selectedMonth,
     searchText: appliedSearchText,

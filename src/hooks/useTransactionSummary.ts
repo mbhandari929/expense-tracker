@@ -4,8 +4,6 @@ import type { Item } from "../types/transaction";
 type UseTransactionSummaryProps = {
   incomes: Item[];
   expenses: Item[];
-  incomeSources: string[];
-  expenseSources: string[];
   openingBalance: number;
   selectedMonth: string;
   searchText: string;
@@ -20,8 +18,6 @@ type MonthlyReportData = {
 export const useTransactionSummary = ({
   incomes,
   expenses,
-  incomeSources,
-  expenseSources,
   openingBalance,
   selectedMonth,
   searchText,
@@ -32,9 +28,13 @@ export const useTransactionSummary = ({
   );
 
   const months = useMemo(() => {
-    const monthList = allItems.map((item) => item.date.slice(0, 7));
+    const monthList = allItems.map((item) =>
+      item.date.slice(0, 7),
+    );
 
-    return Array.from(new Set(monthList)).sort().reverse();
+    return Array.from(new Set(monthList))
+      .sort()
+      .reverse();
   }, [allItems]);
 
   const monthFilteredItems = useMemo(() => {
@@ -43,17 +43,24 @@ export const useTransactionSummary = ({
     }
 
     return allItems.filter(
-      (item) => item.date.slice(0, 7) === selectedMonth,
+      (item) =>
+        item.date.slice(0, 7) === selectedMonth,
     );
   }, [allItems, selectedMonth]);
 
   const monthFilteredIncomes = useMemo(
-    () => monthFilteredItems.filter((item) => item.type === "income"),
+    () =>
+      monthFilteredItems.filter(
+        (item) => item.type === "income",
+      ),
     [monthFilteredItems],
   );
 
   const monthFilteredExpenses = useMemo(
-    () => monthFilteredItems.filter((item) => item.type === "expense"),
+    () =>
+      monthFilteredItems.filter(
+        (item) => item.type === "expense",
+      ),
     [monthFilteredItems],
   );
 
@@ -80,21 +87,35 @@ export const useTransactionSummary = ({
       return openingBalance;
     }
 
-    const previousTransactionsBalance = allItems
-      .filter((item) => item.date.slice(0, 7) < selectedMonth)
-      .reduce((total, item) => {
-        if (item.type === "income") {
-          return total + item.amount;
-        }
+    const previousTransactionsBalance =
+      allItems
+        .filter(
+          (item) =>
+            item.date.slice(0, 7) <
+            selectedMonth,
+        )
+        .reduce((total, item) => {
+          if (item.type === "income") {
+            return total + item.amount;
+          }
 
-        return total - item.amount;
-      }, 0);
+          return total - item.amount;
+        }, 0);
 
-    return openingBalance + previousTransactionsBalance;
-  }, [allItems, openingBalance, selectedMonth]);
+    return (
+      openingBalance +
+      previousTransactionsBalance
+    );
+  }, [
+    allItems,
+    openingBalance,
+    selectedMonth,
+  ]);
 
   const balance =
-    selectedOpeningBalance + totalIncome - totalExpense;
+    selectedOpeningBalance +
+    totalIncome -
+    totalExpense;
 
   const filteredTransactions = useMemo(
     () =>
@@ -102,96 +123,118 @@ export const useTransactionSummary = ({
         .filter((item) =>
           item.text
             .toLowerCase()
-            .includes(searchText.toLowerCase()),
+            .includes(
+              searchText.toLowerCase(),
+            ),
         )
-        .sort((a, b) => b.date.localeCompare(a.date)),
+        .sort((a, b) =>
+          b.date.localeCompare(a.date),
+        ),
     [monthFilteredItems, searchText],
   );
 
   const chartData = useMemo(() => {
-    const transactionReport = [
-      ...incomeSources.map((source) => ({
-        type: "income" as const,
-        source,
-        total: incomes
-          .filter((item) => item.text === source)
-          .reduce((sum, item) => sum + item.amount, 0),
-      })),
+    const groupedTransactions = new Map<
+      string,
+      {
+        name: string;
+        total: number;
+      }
+    >();
 
-      ...expenseSources.map((source) => ({
-        type: "expense" as const,
-        source,
-        total:expenses
-          .filter((item) => item.text === source)
-          .reduce((sum, item) => sum + item.amount, 0),
-      })),
-    ].filter((item) => item.total > 0);
+    allItems.forEach((item) => {
+      const key = `${item.type}:${item.text}`;
 
-    return transactionReport.map((item) => ({
-      name: `${
-        item.type === "income" ? "Income" : "Expense"
-      } - ${item.source}`,
-      total: item.total,
-    }));
-  }, [
-    incomeSources,
-    expenseSources,
-    incomes,
-    expenses,
-  ]);
+      const existing =
+        groupedTransactions.get(key);
+
+      if (existing) {
+        existing.total += item.amount;
+        return;
+      }
+
+      groupedTransactions.set(key, {
+        name: `${
+          item.type === "income"
+            ? "Income"
+            : "Expense"
+        } - ${item.text}`,
+        total: item.amount,
+      });
+    });
+
+    return Array.from(
+      groupedTransactions.values(),
+    ).filter((item) => item.total > 0);
+  }, [allItems]);
 
   const monthlyReport = useMemo(() => {
-  const monthlyTotals = allItems.reduce<
-    Record<string, { income: number; expense: number }>
-  >((report, item) => {
-    const month = item.date.slice(0, 7);
+    const monthlyTotals = allItems.reduce<
+      Record<
+        string,
+        {
+          income: number;
+          expense: number;
+        }
+      >
+    >((report, item) => {
+      const month = item.date.slice(0, 7);
 
-    if (!report[month]) {
-      report[month] = {
-        income: 0,
-        expense: 0,
-      };
-    }
+      if (!report[month]) {
+        report[month] = {
+          income: 0,
+          expense: 0,
+        };
+      }
 
-    if (item.type === "income") {
-      report[month].income += item.amount;
-    } else {
-      report[month].expense += item.amount;
-    }
+      if (item.type === "income") {
+        report[month].income += item.amount;
+      } else {
+        report[month].expense +=
+          item.amount;
+      }
 
-    return report;
-  }, {});
+      return report;
+    }, {});
 
-  const sortedMonths = Object.keys(monthlyTotals).sort();
+    const sortedMonths =
+      Object.keys(monthlyTotals).sort();
 
-  return sortedMonths.reduce<{
-    report: Record<string, MonthlyReportData>;
-    carriedBalance: number;
-  }>(
-    (result, month) => {
-      const { income, expense } = monthlyTotals[month];
+    return sortedMonths.reduce<{
+      report: Record<
+        string,
+        MonthlyReportData
+      >;
+      carriedBalance: number;
+    }>(
+      (result, month) => {
+        const { income, expense } =
+          monthlyTotals[month];
 
-      const closingBalance =
-        result.carriedBalance + income - expense;
+        const closingBalance =
+          result.carriedBalance +
+          income -
+          expense;
 
-      return {
-        carriedBalance: closingBalance,
-        report: {
-          ...result.report,
-          [month]: {
-            income,
-            expense,
-            balance: closingBalance,
+        return {
+          carriedBalance: closingBalance,
+          report: {
+            ...result.report,
+            [month]: {
+              income,
+              expense,
+              balance: closingBalance,
+            },
           },
-        },
-      };
-    },
-    {
-      report: {},
-      carriedBalance: openingBalance,
-    },
-  ).report;
-}, [allItems, openingBalance]);
+        };
+      },
+      {
+        report: {},
+        carriedBalance: openingBalance,
+      },
+    ).report;
+  }, [allItems, openingBalance]);
+
   return {
     allItems,
     months,

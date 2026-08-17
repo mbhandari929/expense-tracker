@@ -3,23 +3,19 @@ import type {
   Dispatch,
   SetStateAction,
 } from "react";
-
+import type {
+  DialogMessage,
+  MonthlyBudgets,
+} from "../types/common";
 import type { Item } from "../types/transaction";
 import { apiFetch } from "../utils/api";
 import { isRecord } from "../utils/typeGuards";
 
-type MonthlyBudgets = Record<string, number>;
 
 type BackupTransaction = {
   text: string;
   amount: number;
   date: string;
-};
-
-type DialogMessage = {
-  title: string;
-  message: string;
-  type: "success" | "error";
 };
 
 type UseBackupProps = {
@@ -31,12 +27,20 @@ type UseBackupProps = {
   openingBalance: number;
   monthlyBudgets: MonthlyBudgets;
 
-  setMonthlyBudgets: Dispatch<SetStateAction<MonthlyBudgets>>;
+  setMonthlyBudgets: Dispatch<
+    SetStateAction<MonthlyBudgets>
+  >;
   setIncomes: Dispatch<SetStateAction<Item[]>>;
   setExpenses: Dispatch<SetStateAction<Item[]>>;
-  setIncomeSources: Dispatch<SetStateAction<string[]>>;
-  setExpenseSources: Dispatch<SetStateAction<string[]>>;
-  setOpeningBalance: Dispatch<SetStateAction<number>>;
+  setIncomeSources: Dispatch<
+    SetStateAction<string[]>
+  >;
+  setExpenseSources: Dispatch<
+    SetStateAction<string[]>
+  >;
+  setOpeningBalance: Dispatch<
+    SetStateAction<number>
+  >;
 
   confirmAction: (
     title: string,
@@ -65,6 +69,73 @@ type RestoreResponse = {
   };
 };
 
+const normalizeDate = (
+  value: unknown,
+): string => {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  const date = value.slice(0, 10);
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return "";
+  }
+
+  const [year, month, day] = date
+    .split("-")
+    .map(Number);
+
+  const parsedDate = new Date(
+    Date.UTC(year, month - 1, day),
+  );
+
+  if (
+    parsedDate.getUTCFullYear() !== year ||
+    parsedDate.getUTCMonth() !== month - 1 ||
+    parsedDate.getUTCDate() !== day
+  ) {
+    return "";
+  }
+
+  return date;
+};
+
+const normalizeSources = (
+  value: unknown,
+): string[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return Array.from(
+    new Set(
+      value
+        .filter(
+          (source): source is string =>
+            typeof source === "string",
+        )
+        .map((source) => source.trim())
+        .filter(Boolean),
+    ),
+  );
+};
+
+const mergeSources = (
+  existingSources: string[],
+  transactions: BackupTransaction[],
+): string[] => {
+  const transactionSources =
+    transactions.map((item) => item.text);
+
+  return Array.from(
+    new Set([
+      ...existingSources,
+      ...transactionSources,
+    ]),
+  );
+};
+
 const normalizeBackupTransactions = (
   value: unknown,
 ): BackupTransaction[] => {
@@ -83,11 +154,7 @@ const normalizeBackupTransactions = (
         : "";
 
     const amount = Number(item.amount);
-
-    const date =
-      typeof item.date === "string"
-        ? item.date.slice(0, 10)
-        : "";
+    const date = normalizeDate(item.date);
 
     if (
       !text ||
@@ -177,7 +244,8 @@ export const useBackup = ({
     const link = document.createElement("a");
 
     link.href = url;
-    link.download = "expense-tracker-backup.json";
+    link.download =
+      "expense-tracker-backup.json";
     link.click();
 
     URL.revokeObjectURL(url);
@@ -201,40 +269,62 @@ export const useBackup = ({
         );
 
         if (!isRecord(data)) {
-          throw new Error("Invalid backup data");
+          throw new Error(
+            "Invalid backup data",
+          );
         }
 
         const normalizedIncomes =
-          normalizeBackupTransactions(data.incomes);
+          normalizeBackupTransactions(
+            data.incomes,
+          );
 
         const normalizedExpenses =
-          normalizeBackupTransactions(data.expenses);
+          normalizeBackupTransactions(
+            data.expenses,
+          );
 
         const restoredIncomeSources =
-          Array.isArray(data.incomeSources)
-            ? data.incomeSources.filter(
-                (source): source is string =>
-                  typeof source === "string",
-              )
-            : [];
+          normalizeSources(
+            data.incomeSources,
+          );
 
         const restoredExpenseSources =
-          Array.isArray(data.expenseSources)
-            ? data.expenseSources.filter(
-                (source): source is string =>
-                  typeof source === "string",
-              )
-            : [];
+          normalizeSources(
+            data.expenseSources,
+          );
+
+        const mergedIncomeSources =
+          mergeSources(
+            restoredIncomeSources,
+            normalizedIncomes,
+          );
+
+        const mergedExpenseSources =
+          mergeSources(
+            restoredExpenseSources,
+            normalizedExpenses,
+          );
 
         const restoredMonthlyBudgets =
           isRecord(data.monthlyBudgets)
             ? (data.monthlyBudgets as MonthlyBudgets)
             : {};
 
-        const shouldReplace = await confirmAction(
-          "Restore Backup",
-          "This will replace all existing transactions and settings with the selected backup. This action cannot be undone.",
+        const rawOpeningBalance = Number(
+          data.openingBalance,
         );
+
+        const restoredOpeningBalance =
+          Number.isFinite(rawOpeningBalance)
+            ? rawOpeningBalance
+            : 0;
+
+        const shouldReplace =
+          await confirmAction(
+            "Restore Backup",
+            "This will replace all existing transactions and settings with the selected backup. This action cannot be undone.",
+          );
 
         if (!shouldReplace) {
           return;
@@ -245,16 +335,22 @@ export const useBackup = ({
           {
             method: "PUT",
             headers: {
-              "Content-Type": "application/json",
+              "Content-Type":
+                "application/json",
             },
             body: JSON.stringify({
-              incomes: normalizedIncomes,
-              expenses: normalizedExpenses,
+              incomes:
+                normalizedIncomes,
+              expenses:
+                normalizedExpenses,
               openingBalance:
-                Number(data.openingBalance) || 0,
-              incomeSources: restoredIncomeSources,
-              expenseSources: restoredExpenseSources,
-              monthlyBudgets: restoredMonthlyBudgets,
+                restoredOpeningBalance,
+              incomeSources:
+                mergedIncomeSources,
+              expenseSources:
+                mergedExpenseSources,
+              monthlyBudgets:
+                restoredMonthlyBudgets,
             }),
           },
         );
@@ -268,40 +364,69 @@ export const useBackup = ({
         const restoredData =
           (await response.json()) as RestoreResponse;
 
-        setIncomes(
-          restoredData.incomes.map((item) => ({
-            id: String(item.id),
-            text: item.text,
-            amount: Number(item.amount),
-            date: item.date,
-            type: "income",
-          })),
-        );
+        const restoredIncomes: Item[] =
+          restoredData.incomes.map(
+            (item) => ({
+              id: String(item.id),
+              text: item.text.trim(),
+              amount: Number(item.amount),
+              date:
+                normalizeDate(item.date),
+              type: "income",
+            }),
+          );
 
-        setExpenses(
-          restoredData.expenses.map((item) => ({
-            id: String(item.id),
-            text: item.text,
-            amount: Number(item.amount),
-            date: item.date,
-            type: "expense",
-          })),
-        );
+        const restoredExpenses: Item[] =
+          restoredData.expenses.map(
+            (item) => ({
+              id: String(item.id),
+              text: item.text.trim(),
+              amount: Number(item.amount),
+              date:
+                normalizeDate(item.date),
+              type: "expense",
+            }),
+          );
+
+        const finalIncomeSources =
+          mergeSources(
+            normalizeSources(
+              restoredData.settings
+                .incomeSources,
+            ),
+            restoredIncomes,
+          );
+
+        const finalExpenseSources =
+          mergeSources(
+            normalizeSources(
+              restoredData.settings
+                .expenseSources,
+            ),
+            restoredExpenses,
+          );
+
+        setIncomes(restoredIncomes);
+        setExpenses(restoredExpenses);
 
         setOpeningBalance(
-          Number(restoredData.settings.openingBalance) || 0,
+          Number(
+            restoredData.settings
+              .openingBalance,
+          ) || 0,
         );
 
         setIncomeSources(
-          restoredData.settings.incomeSources,
+          finalIncomeSources,
         );
 
         setExpenseSources(
-          restoredData.settings.expenseSources,
+          finalExpenseSources,
         );
 
         setMonthlyBudgets(
-          restoredData.settings.monthlyBudgets || {},
+          restoredData.settings
+            .monthlyBudgets || {},
         );
 
         showMessage({
@@ -317,7 +442,8 @@ export const useBackup = ({
         );
 
         showMessage({
-          title: "Backup Restore Failed",
+          title:
+            "Backup Restore Failed",
           message:
             "The backup could not be restored. Please check the selected file and try again.",
           type: "error",

@@ -9,21 +9,7 @@ import type {
   TransactionType,
 } from "../types/transaction";
 import { apiFetch } from "../utils/api";
-
-const getTodayLocalDate = () => {
-  const today = new Date();
-
-  const year = today.getFullYear();
-  const month = String(
-    today.getMonth() + 1,
-  ).padStart(2, "0");
-
-  const day = String(
-    today.getDate(),
-  ).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-};
+import { getTodayLocalDate } from "../utils/date";
 
 type UseTransactionFormProps = {
   apiUrl: string;

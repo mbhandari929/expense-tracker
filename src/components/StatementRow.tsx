@@ -2,24 +2,7 @@ import { useState } from "react";
 import StatementActionButtons from "./StatementActionButtons";
 import type { Item } from "../types/transaction";
 import { formatCurrency } from "../utils/currency";
-
-export type TransactionItem = Item;
-
-const getTodayLocalDate = () => {
-  const today = new Date();
-
-  const year = today.getFullYear();
-  const month = String(
-    today.getMonth() + 1,
-  ).padStart(2, "0");
-
-  const day = String(
-    today.getDate(),
-  ).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-};
-
+import { getTodayLocalDate } from "../utils/date";
 type StatementRowProps = {
   item: Item;
   onSave: (
