@@ -1,3 +1,9 @@
+import {
+  useEffect,
+  useRef,
+  type KeyboardEvent,
+} from "react";
+
 export type AppModalVariant =
   | "info"
   | "success"
@@ -23,9 +29,72 @@ function AppModal({
   onConfirm,
   onCancel,
 }: AppModalProps) {
+  const modalRef = useRef<HTMLDivElement>(null);
+  const confirmButtonRef =
+    useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    confirmButtonRef.current?.focus();
+  }, []);
+
+  const handleKeyDown = (
+    event: KeyboardEvent<HTMLDivElement>,
+  ) => {
+    if (event.key === "Escape") {
+      onCancel?.();
+      return;
+    }
+
+    if (event.key !== "Tab") {
+      return;
+    }
+
+    const focusableElements =
+      modalRef.current?.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+
+    if (!focusableElements?.length) {
+      return;
+    }
+
+    const firstElement = focusableElements[0];
+    const lastElement =
+      focusableElements[focusableElements.length - 1];
+
+    if (
+      event.shiftKey &&
+      document.activeElement === firstElement
+    ) {
+      event.preventDefault();
+      lastElement.focus();
+      return;
+    }
+
+    if (
+      !event.shiftKey &&
+      document.activeElement === lastElement
+    ) {
+      event.preventDefault();
+      firstElement.focus();
+    }
+  };
+
   return (
-    <div className="app-modal-overlay">
+    <div
+      className="app-modal-overlay"
+      onKeyDown={handleKeyDown}
+      onMouseDown={(event) => {
+        if (
+          event.target === event.currentTarget &&
+          onCancel
+        ) {
+          onCancel();
+        }
+      }}
+    >
       <div
+        ref={modalRef}
         className={`app-modal app-modal-${variant}`}
         role="dialog"
         aria-modal="true"
@@ -48,6 +117,7 @@ function AppModal({
           )}
 
           <button
+            ref={confirmButtonRef}
             type="button"
             className="app-modal-confirm"
             onClick={onConfirm}

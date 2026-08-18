@@ -11,10 +11,26 @@ export const setAccessToken = (token: string) => {
 export const removeAccessToken = () => {
   sessionStorage.removeItem(TOKEN_KEY);
 };
+
+let unauthorizedHandler: (() => void) | null = null;
+
+export const setUnauthorizedHandler = (
+  handler: (() => void) | null,
+) => {
+  unauthorizedHandler = handler;
+};
+
+type ApiFetchOptions = {
+  handleUnauthorized?: boolean;
+};
+
 export const apiFetch = async (
   input: RequestInfo | URL,
   init: RequestInit = {},
+  options: ApiFetchOptions = {},
 ) => {
+  const { handleUnauthorized = true } = options;
+
   const headers = new Headers(init.headers);
   const token = getAccessToken();
 
@@ -27,9 +43,12 @@ export const apiFetch = async (
     headers,
   });
 
-  if (response.status === 401) {
+  if (
+    response.status === 401 &&
+    handleUnauthorized
+  ) {
     removeAccessToken();
-    window.location.reload();
+    unauthorizedHandler?.();
   }
 
   return response;

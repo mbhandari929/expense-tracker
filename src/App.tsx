@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import ActionButtons from "./components/ActionButtons";
 import AppModal, {
@@ -14,7 +14,7 @@ import SummaryCard from "./components/SummaryCard";
 import TransactionChart from "./components/TransactionChart";
 import TransactionForm from "./components/TransactionForm";
 import TransactionStatement from "./components/TransactionStatement";
-
+import type { DialogMessage } from "./types/common";
 import { useBackup } from "./hooks/useBackup";
 import { useExpenseData } from "./hooks/useExpenseData";
 import { useTransactionForm } from "./hooks/useTransactionForm";
@@ -24,19 +24,16 @@ import type { Item } from "./types/transaction";
 import {
   getAccessToken,
   removeAccessToken,
+  setAccessToken,
+  setUnauthorizedHandler,
 } from "./utils/api";
 
 import "./App.css";
 
 const API_URL = import.meta.env.VITE_API_URL || "/api";
+
 type ExpenseTrackerAppProps = {
   onLogout: () => void;
-};
-
-type DialogMessage = {
-  title: string;
-  message: string;
-  type: "success" | "error";
 };
 
 type ModalState = {
@@ -122,6 +119,20 @@ function ExpenseTrackerApp({
         },
       });
     });
+
+  const handleLogoutRequest = async () => {
+    const confirmed = await confirmAction(
+      "Log Out",
+      "Are you sure you want to log out?",
+      "Log Out",
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    onLogout();
+  };
 
   const saveSources = (
     nextIncomeSources: string[],
@@ -313,7 +324,7 @@ function ExpenseTrackerApp({
           onChangePassword={() =>
             setShowChangePassword(true)
           }
-          onLogout={onLogout}
+          onLogout={() => void handleLogoutRequest()}
         />
 
         {showChangePassword && (
@@ -520,19 +531,32 @@ function ExpenseTrackerApp({
 
 function App() {
   const params = new URLSearchParams(
-    window.location.search,
+    window.location.hash.slice(1),
   );
 
   const resetToken = params.get("token");
 
-  const [token, setToken] =
-    useState<string | null>(() =>
-      getAccessToken(),
-    );
+  const [isAuthenticated, setIsAuthenticated] =
+    useState(() => Boolean(getAccessToken()));
+
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      setIsAuthenticated(false);
+    });
+
+    return () => {
+      setUnauthorizedHandler(null);
+    };
+  }, []);
+
+  const handleLogin = (accessToken: string) => {
+    setAccessToken(accessToken);
+    setIsAuthenticated(true);
+  };
 
   const handleLogout = () => {
     removeAccessToken();
-    setToken(null);
+    setIsAuthenticated(false);
   };
 
   const handleResetSuccess = () => {
@@ -542,7 +566,7 @@ function App() {
       "/",
     );
 
-    window.location.reload();
+    handleLogout();
   };
 
   if (
@@ -559,11 +583,11 @@ function App() {
     );
   }
 
-  if (!token) {
+  if (!isAuthenticated) {
     return (
       <AuthForm
         apiUrl={API_URL}
-        onLogin={setToken}
+        onLogin={handleLogin}
       />
     );
   }

@@ -57,6 +57,9 @@ function ChangePasswordForm({
             newPassword,
           }),
         },
+        {
+          handleUnauthorized: false,
+        },
       );
 
       const data =
@@ -81,90 +84,94 @@ function ChangePasswordForm({
   };
 
   return (
-    <div className="change-password-card">
-      <h2>Change Password</h2>
+    <div className="change-password-overlay">
+      <div className="change-password-card">
+        <h2>Change Password</h2>
 
-      <form onSubmit={handleSubmit}>
-        <div className="change-password-field">
-          <label htmlFor="current-password">
-            Current Password
-          </label>
+        <form onSubmit={handleSubmit}>
+          <div className="change-password-field">
+            <label htmlFor="current-password">
+              Current Password
+            </label>
 
-          <input
-            id="current-password"
-            type="password"
-            value={currentPassword}
-            minLength={8}
-            maxLength={72}
-            autoComplete="current-password"
-            required
-            onChange={(event) =>
-              setCurrentPassword(event.target.value)
-            }
-          />
-        </div>
+            <input
+              id="current-password"
+              type="password"
+              value={currentPassword}
+              minLength={8}
+              maxLength={72}
+              autoComplete="current-password"
+              required
+              onChange={(event) =>
+                setCurrentPassword(event.target.value)
+              }
+            />
+          </div>
 
-        <div className="change-password-field">
-          <label htmlFor="new-password">
-            New Password
-          </label>
+          <div className="change-password-field">
+            <label htmlFor="new-password">
+              New Password
+            </label>
 
-          <input
-            id="new-password"
-            type="password"
-            value={newPassword}
-            minLength={8}
-            maxLength={72}
-            autoComplete="new-password"
-            required
-            onChange={(event) =>
-              setNewPassword(event.target.value)
-            }
-          />
-        </div>
+            <input
+              id="new-password"
+              type="password"
+              value={newPassword}
+              minLength={8}
+              maxLength={72}
+              autoComplete="new-password"
+              required
+              onChange={(event) =>
+                setNewPassword(event.target.value)
+              }
+            />
+          </div>
 
-        <div className="change-password-field">
-          <label htmlFor="confirm-password">
-            Confirm New Password
-          </label>
+          <div className="change-password-field">
+            <label htmlFor="confirm-password">
+              Confirm New Password
+            </label>
 
-          <input
-            id="confirm-password"
-            type="password"
-            value={confirmPassword}
-            minLength={8}
-            maxLength={72}
-            autoComplete="new-password"
-            required
-            onChange={(event) =>
-              setConfirmPassword(event.target.value)
-            }
-          />
-        </div>
+            <input
+              id="confirm-password"
+              type="password"
+              value={confirmPassword}
+              minLength={8}
+              maxLength={72}
+              autoComplete="new-password"
+              required
+              onChange={(event) =>
+                setConfirmPassword(event.target.value)
+              }
+            />
+          </div>
 
-        {error && (
-          <p className="change-password-error" role="alert">
-            {error}
-          </p>
-        )}
+          {error && (
+            <p className="change-password-error" role="alert">
+              {error}
+            </p>
+          )}
 
-        <div className="change-password-actions">
-          <button
-            type="submit"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "Changing..." : "Change Password"}
-          </button>
+          <div className="change-password-actions">
+            <button
+              type="submit"
+              disabled={isSubmitting}
+            >
+              {isSubmitting
+                ? "Changing..."
+                : "Change Password"}
+            </button>
 
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isSubmitting}
-          >
-            Cancel
-          </button>
-        </div>
-      </form>
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

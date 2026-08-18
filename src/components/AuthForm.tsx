@@ -1,6 +1,4 @@
 import { useState, type FormEvent } from "react";
-
-import { setAccessToken } from "../utils/api";
 import "./AuthForm.css";
 
 type AuthMode = "login" | "register" | "forgot";
@@ -13,6 +11,84 @@ type AuthFormProps = {
 type AuthResponse = {
   access_token?: string;
   message?: string | string[];
+};
+
+type AuthRequestResult = {
+  ok: boolean;
+  data: AuthResponse;
+  errorMessage?: string;
+};
+
+const getMessage = (value?: string | string[]) =>
+  Array.isArray(value) ? value.join(" ") : value;
+
+const authFetch = async (
+  apiUrl: string,
+  path: string,
+  body: Record<string, string>,
+  fallbackError: string,
+): Promise<AuthRequestResult> => {
+  const response = await fetch(`${apiUrl}${path}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  const rawBody = await response.text();
+
+  if (!rawBody) {
+    return {
+      ok: response.ok,
+      data: {},
+      errorMessage: response.ok
+        ? undefined
+        : `${fallbackError} (HTTP ${response.status}).`,
+    };
+  }
+
+  const contentType =
+    response.headers.get("content-type") || "";
+
+  if (!contentType.toLowerCase().includes("json")) {
+    return {
+      ok: false,
+      data: {},
+      errorMessage:
+        `${fallbackError} Server returned a non-JSON response ` +
+        `(HTTP ${response.status}).`,
+    };
+  }
+
+  let data: AuthResponse;
+
+  try {
+    data = JSON.parse(rawBody) as AuthResponse;
+  } catch {
+    return {
+      ok: false,
+      data: {},
+      errorMessage:
+        `${fallbackError} Server returned invalid JSON ` +
+        `(HTTP ${response.status}).`,
+    };
+  }
+
+  if (!response.ok) {
+    return {
+      ok: false,
+      data,
+      errorMessage:
+        getMessage(data.message) ||
+        `${fallbackError} (HTTP ${response.status}).`,
+    };
+  }
+
+  return {
+    ok: true,
+    data,
+  };
 };
 
 function AuthForm({ apiUrl, onLogin }: AuthFormProps) {
@@ -32,9 +108,6 @@ function AuthForm({ apiUrl, onLogin }: AuthFormProps) {
     setMessage("");
   };
 
-  const getMessage = (value?: string | string[]) =>
-    Array.isArray(value) ? value.join(" ") : value;
-
   const changeMode = (nextMode: AuthMode) => {
     setMode(nextMode);
     setPassword("");
@@ -49,22 +122,19 @@ function AuthForm({ apiUrl, onLogin }: AuthFormProps) {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${apiUrl}/auth/${mode}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      const result = await authFetch(
+        apiUrl,
+        `/auth/${mode}`,
+        {
           email: email.trim(),
           password,
-        }),
-      });
+        },
+        "Authentication failed.",
+      );
 
-      const data = (await response.json()) as AuthResponse;
-
-      if (!response.ok) {
+      if (!result.ok) {
         setError(
-          getMessage(data.message) || "Authentication failed.",
+          result.errorMessage || "Authentication failed.",
         );
         return;
       }
@@ -76,13 +146,12 @@ function AuthForm({ apiUrl, onLogin }: AuthFormProps) {
         return;
       }
 
-      if (!data.access_token) {
+      if (!result.data.access_token) {
         setError("Access token was not returned.");
         return;
       }
 
-      setAccessToken(data.access_token);
-      onLogin(data.access_token);
+      onLogin(result.data.access_token);
     } catch (error) {
       console.error("Authentication request failed:", error);
       setError("Unable to connect to the server.");
@@ -99,31 +168,25 @@ function AuthForm({ apiUrl, onLogin }: AuthFormProps) {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(
-        `${apiUrl}/auth/forgot-password`,
+      const result = await authFetch(
+        apiUrl,
+        "/auth/forgot-password",
         {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email: email.trim(),
-          }),
+          email: email.trim(),
         },
+        "Password reset request failed.",
       );
 
-      const data = (await response.json()) as AuthResponse;
-
-      if (!response.ok) {
+      if (!result.ok) {
         setError(
-          getMessage(data.message) ||
+          result.errorMessage ||
             "Password reset request failed.",
         );
         return;
       }
 
       setMessage(
-        getMessage(data.message) ||
+        getMessage(result.data.message) ||
           "If an account exists, a reset link has been sent.",
       );
     } catch (error) {
@@ -222,7 +285,9 @@ function AuthForm({ apiUrl, onLogin }: AuthFormProps) {
               </div>
 
               <div className="auth-field">
-                <label htmlFor="auth-password">Password</label>
+                <label htmlFor="auth-password">
+                  Password
+                </label>
 
                 <input
                   id="auth-password"

@@ -33,9 +33,6 @@ const DEFAULT_EXPENSE_SOURCES = [
   "Other",
 ];
 
-const SETTINGS_STORAGE_KEY =
-  "expense-tracker-settings";
-
 export type SettingsPayload = {
   openingBalance: number;
   incomeSources: string[];
@@ -161,43 +158,6 @@ const normalizeSettings = (
   ),
 });
 
-const loadStoredSettings =
-  (): SettingsPayload | null => {
-    try {
-      const stored = localStorage.getItem(
-        SETTINGS_STORAGE_KEY,
-      );
-
-      if (!stored) {
-        return null;
-      }
-
-      const parsed: unknown = JSON.parse(stored);
-
-      if (!isRecord(parsed)) {
-        return null;
-      }
-
-      return normalizeSettings(parsed);
-    } catch (error) {
-      console.error(
-        "Browser settings load failed:",
-        error,
-      );
-
-      return null;
-    }
-  };
-
-const storeSettings = (
-  settings: SettingsPayload,
-) => {
-  localStorage.setItem(
-    SETTINGS_STORAGE_KEY,
-    JSON.stringify(settings),
-  );
-};
-
 const isAbortError = (
   error: unknown,
 ): boolean =>
@@ -266,16 +226,6 @@ export const useExpenseData = (
 
     const loadData = async () => {
       const errorMessages: string[] = [];
-
-      const storedSettings =
-        loadStoredSettings();
-
-      if (
-        storedSettings &&
-        !controller.signal.aborted
-      ) {
-        applySettings(storedSettings);
-      }
 
       try {
         const [
@@ -379,10 +329,6 @@ export const useExpenseData = (
         applySettings(
           normalizedSettings,
         );
-
-        storeSettings(
-          normalizedSettings,
-        );
       } catch (error) {
         if (isAbortError(error)) {
           return;
@@ -394,7 +340,7 @@ export const useExpenseData = (
         );
 
         errorMessages.push(
-          "Settings API is unavailable. Browser settings are being used.",
+          "Settings data could not be loaded from the server.",
         );
       }
 
@@ -416,21 +362,6 @@ export const useExpenseData = (
     async (
       settings: SettingsPayload,
     ): Promise<boolean> => {
-      try {
-        storeSettings(settings);
-      } catch (error) {
-        console.error(
-          "Browser settings save failed:",
-          error,
-        );
-
-        setApiError(
-          "Settings could not be saved in this browser.",
-        );
-
-        return false;
-      }
-
       try {
         const response =
           await apiFetch(
@@ -462,10 +393,10 @@ export const useExpenseData = (
         );
 
         setApiError(
-          "Settings were saved in this browser, but could not be synced with the server.",
+          "Settings could not be saved to the server.",
         );
 
-        return true;
+        return false;
       }
     },
     [apiUrl],
