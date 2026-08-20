@@ -1,4 +1,8 @@
 import { useState, type FormEvent } from "react";
+import {
+  authFetch,
+  getAuthMessage,
+} from "../utils/api";
 import "./AuthForm.css";
 
 type AuthMode = "login" | "register" | "forgot";
@@ -6,89 +10,6 @@ type AuthMode = "login" | "register" | "forgot";
 type AuthFormProps = {
   apiUrl: string;
   onLogin: (token: string) => void;
-};
-
-type AuthResponse = {
-  access_token?: string;
-  message?: string | string[];
-};
-
-type AuthRequestResult = {
-  ok: boolean;
-  data: AuthResponse;
-  errorMessage?: string;
-};
-
-const getMessage = (value?: string | string[]) =>
-  Array.isArray(value) ? value.join(" ") : value;
-
-const authFetch = async (
-  apiUrl: string,
-  path: string,
-  body: Record<string, string>,
-  fallbackError: string,
-): Promise<AuthRequestResult> => {
-  const response = await fetch(`${apiUrl}${path}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
-  });
-
-  const rawBody = await response.text();
-
-  if (!rawBody) {
-    return {
-      ok: response.ok,
-      data: {},
-      errorMessage: response.ok
-        ? undefined
-        : `${fallbackError} (HTTP ${response.status}).`,
-    };
-  }
-
-  const contentType =
-    response.headers.get("content-type") || "";
-
-  if (!contentType.toLowerCase().includes("json")) {
-    return {
-      ok: false,
-      data: {},
-      errorMessage:
-        `${fallbackError} Server returned a non-JSON response ` +
-        `(HTTP ${response.status}).`,
-    };
-  }
-
-  let data: AuthResponse;
-
-  try {
-    data = JSON.parse(rawBody) as AuthResponse;
-  } catch {
-    return {
-      ok: false,
-      data: {},
-      errorMessage:
-        `${fallbackError} Server returned invalid JSON ` +
-        `(HTTP ${response.status}).`,
-    };
-  }
-
-  if (!response.ok) {
-    return {
-      ok: false,
-      data,
-      errorMessage:
-        getMessage(data.message) ||
-        `${fallbackError} (HTTP ${response.status}).`,
-    };
-  }
-
-  return {
-    ok: true,
-    data,
-  };
 };
 
 function AuthForm({ apiUrl, onLogin }: AuthFormProps) {
@@ -186,7 +107,7 @@ function AuthForm({ apiUrl, onLogin }: AuthFormProps) {
       }
 
       setMessage(
-        getMessage(result.data.message) ||
+        getAuthMessage(result.data.message) ||
           "If an account exists, a reset link has been sent.",
       );
     } catch (error) {

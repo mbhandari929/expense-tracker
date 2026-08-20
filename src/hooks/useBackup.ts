@@ -8,7 +8,7 @@ import type {
   MonthlyBudgets,
 } from "../types/common";
 import type { Item } from "../types/transaction";
-import { apiFetch } from "../utils/api";
+import type { ApiFetcher } from "../utils/api";
 import { isRecord } from "../utils/typeGuards";
 
 
@@ -20,6 +20,7 @@ type BackupTransaction = {
 
 type UseBackupProps = {
   apiUrl: string;
+  apiFetch: ApiFetcher;
   incomes: Item[];
   expenses: Item[];
   incomeSources: string[];
@@ -177,6 +178,7 @@ const normalizeBackupTransactions = (
 
 export const useBackup = ({
   apiUrl,
+  apiFetch,
   incomes,
   expenses,
   incomeSources,

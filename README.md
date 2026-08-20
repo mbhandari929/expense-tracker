@@ -87,10 +87,9 @@ Because `sessionStorage` is accessible from JavaScript, an XSS vulnerability cou
 
 The backend currently issues access tokens with a lifetime of 1 hour.
 
-When a protected API request returns `401 Unauthorized`, the frontend removes the stored access token and updates the React authentication state so that the login screen is shown without reloading the page.
+When a protected API request returns `401 Unauthorized`, the React-owned authenticated request handler ends the session and returns the application to the login screen without reloading the page.
 
-Authentication-specific forms can handle their own 401 responses when necessary. For example, the change-password form handles an incorrect current password without triggering the global unauthorized handler.
-
+The change-password form handles its own `401` response so that an incorrect current password is shown as a form error, while an expired or invalid session ends the authenticated session.
 ### Logout
 
 Logout removes the JWT access token from `sessionStorage` and returns the frontend to the login screen.
@@ -101,26 +100,10 @@ Password changes and password resets invalidate existing access tokens by updati
 
 ### Password Reset
 
-Password reset links use a URL fragment instead of a query parameter:
+Password reset links use a hash-based client-side route:
 
 ```text
-/reset-password#token=RESET_TOKEN
-```
-
-The frontend reads the reset token from the URL fragment and sends it to the backend in the password reset POST request body.
-
-Using a URL fragment reduces the risk of the reset token being included in server access logs or Referer headers.
-
-After a successful password reset, the reset URL is removed and the application returns to the login screen without a full page reload.
-
-### SPA Fallback
-
-The frontend handles `/reset-password` as a client-side route.
-
-Production hosting must be configured so that direct requests to `/reset-password` fall back to `index.html`.
-
-Without SPA fallback, directly opening a password reset link may return a 404 response.
-
+/#/reset-password?token=RESET_TOKEN
 ## Transaction Chart
 
 The transaction chart currently shows all-time transaction totals.

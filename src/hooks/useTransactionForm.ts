@@ -8,11 +8,12 @@ import type {
   Item,
   TransactionType,
 } from "../types/transaction";
-import { apiFetch } from "../utils/api";
+import type { ApiFetcher } from "../utils/api";
 import { getTodayLocalDate } from "../utils/date";
 
 type UseTransactionFormProps = {
   apiUrl: string;
+  apiFetch: ApiFetcher;
   incomes: Item[];
   expenses: Item[];
   incomeSources: string[];
@@ -42,6 +43,7 @@ type UseTransactionFormProps = {
 
 export const useTransactionForm = ({
   apiUrl,
+  apiFetch,
   incomes,
   expenses,
   incomeSources,

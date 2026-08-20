@@ -1,28 +1,115 @@
-import { useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type KeyboardEvent,
+  type MouseEvent,
+} from "react";
 
-import { apiFetch } from "../utils/api";
+import {
+  authFetch,
+  getAuthMessage,
+} from "../utils/api";
+
 import "./ChangePasswordForm.css";
 
 type ChangePasswordFormProps = {
   apiUrl: string;
   onClose: () => void;
   onSuccess: () => void;
+  onUnauthorized: () => void;
 };
 
-type ChangePasswordResponse = {
-  message?: string | string[];
-};
+const FOCUSABLE_SELECTOR = [
+  "button:not([disabled])",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  "a[href]",
+  '[tabindex]:not([tabindex="-1"])',
+].join(",");
 
 function ChangePasswordForm({
   apiUrl,
   onClose,
   onSuccess,
+  onUnauthorized,
 }: ChangePasswordFormProps) {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const currentPasswordRef =
+    useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    currentPasswordRef.current?.focus();
+  }, []);
+
+  const handleKeyDown = (
+    event: KeyboardEvent<HTMLDivElement>,
+  ) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+
+      if (!isSubmitting) {
+        onClose();
+      }
+
+      return;
+    }
+
+    if (event.key !== "Tab") {
+      return;
+    }
+
+    const focusableElements =
+      dialogRef.current?.querySelectorAll<HTMLElement>(
+        FOCUSABLE_SELECTOR,
+      );
+
+    if (!focusableElements?.length) {
+      event.preventDefault();
+      dialogRef.current?.focus();
+      return;
+    }
+
+    const firstElement = focusableElements[0];
+    const lastElement =
+      focusableElements[focusableElements.length - 1];
+
+    if (
+      event.shiftKey &&
+      document.activeElement === firstElement
+    ) {
+      event.preventDefault();
+      lastElement.focus();
+      return;
+    }
+
+    if (
+      !event.shiftKey &&
+      document.activeElement === lastElement
+    ) {
+      event.preventDefault();
+      firstElement.focus();
+    }
+  };
+
+  const handleOverlayMouseDown = (
+    event: MouseEvent<HTMLDivElement>,
+  ) => {
+    if (
+      event.target === event.currentTarget &&
+      !isSubmitting
+    ) {
+      onClose();
+    }
+  };
 
   const handleSubmit = async (
     event: FormEvent<HTMLFormElement>,
@@ -45,32 +132,42 @@ function ChangePasswordForm({
     setIsSubmitting(true);
 
     try {
-      const response = await apiFetch(
-        `${apiUrl}/auth/change-password`,
+      const result = await authFetch(
+        apiUrl,
+        "/auth/change-password",
+        {
+          currentPassword,
+          newPassword,
+        },
+        "Password change failed.",
         {
           method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            currentPassword,
-            newPassword,
-          }),
-        },
-        {
-          handleUnauthorized: false,
+          authenticated: true,
         },
       );
 
-      const data =
-        (await response.json()) as ChangePasswordResponse;
+      const message = getAuthMessage(
+        result.data.message,
+      );
 
-      if (!response.ok) {
-        const errorMessage = Array.isArray(data.message)
-          ? data.message.join(" ")
-          : data.message;
+      const isCurrentPasswordError =
+        result.status === 401 &&
+        message ===
+          "Current password is incorrect";
 
-        setError(errorMessage || "Password change failed.");
+      if (
+        result.status === 401 &&
+        !isCurrentPasswordError
+      ) {
+        onUnauthorized();
+        return;
+      }
+
+      if (!result.ok) {
+        setError(
+          result.errorMessage ||
+            "Password change failed.",
+        );
         return;
       }
 
@@ -84,9 +181,22 @@ function ChangePasswordForm({
   };
 
   return (
-    <div className="change-password-overlay">
-      <div className="change-password-card">
-        <h2>Change Password</h2>
+    <div
+      className="change-password-overlay"
+      onMouseDown={handleOverlayMouseDown}
+    >
+      <div
+        ref={dialogRef}
+        className="change-password-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="change-password-title"
+        tabIndex={-1}
+        onKeyDown={handleKeyDown}
+      >
+        <h2 id="change-password-title">
+          Change Password
+        </h2>
 
         <form onSubmit={handleSubmit}>
           <div className="change-password-field">
@@ -95,6 +205,7 @@ function ChangePasswordForm({
             </label>
 
             <input
+              ref={currentPasswordRef}
               id="current-password"
               type="password"
               value={currentPassword}

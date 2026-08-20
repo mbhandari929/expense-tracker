@@ -1,4 +1,8 @@
-import { useEffect, useState } from "react";
+import {
+  useCallback,
+  useRef,
+  useState,
+} from "react";
 
 import ActionButtons from "./components/ActionButtons";
 import AppModal, {
@@ -22,10 +26,10 @@ import { useTransactionSummary } from "./hooks/useTransactionSummary";
 
 import type { Item } from "./types/transaction";
 import {
+  apiFetch,
   getAccessToken,
   removeAccessToken,
   setAccessToken,
-  setUnauthorizedHandler,
 } from "./utils/api";
 
 import "./App.css";
@@ -49,6 +53,33 @@ type ModalState = {
 function ExpenseTrackerApp({
   onLogout,
 }: ExpenseTrackerAppProps) {
+  const sessionEndedRef = useRef(false);
+
+  const handleUnauthorized = useCallback(() => {
+    if (sessionEndedRef.current) {
+      return;
+    }
+
+    sessionEndedRef.current = true;
+    onLogout();
+  }, [onLogout]);
+
+  const authenticatedFetch = useCallback(
+    async (
+      input: RequestInfo | URL,
+      init: RequestInit = {},
+    ) => {
+      const response = await apiFetch(input, init);
+
+      if (response.status === 401) {
+        handleUnauthorized();
+      }
+
+      return response;
+    },
+    [handleUnauthorized],
+  );
+
   const {
     openingBalance,
     setOpeningBalance,
@@ -64,7 +95,10 @@ function ExpenseTrackerApp({
     setMonthlyBudgets,
     apiError,
     saveSettings,
-  } = useExpenseData(API_URL);
+  } = useExpenseData(
+    API_URL,
+    authenticatedFetch,
+  );
 
   const [searchInput, setSearchInput] = useState("");
   const [appliedSearchText, setAppliedSearchText] =
@@ -167,6 +201,7 @@ function ExpenseTrackerApp({
     deleteTransaction,
   } = useTransactionForm({
     apiUrl: API_URL,
+    apiFetch: authenticatedFetch,
     incomes,
     expenses,
     incomeSources,
@@ -184,6 +219,7 @@ function ExpenseTrackerApp({
     importJSON,
   } = useBackup({
     apiUrl: API_URL,
+    apiFetch: authenticatedFetch,
     incomes,
     expenses,
     incomeSources,
@@ -336,6 +372,7 @@ function ExpenseTrackerApp({
             onSuccess={
               handlePasswordChangeSuccess
             }
+            onUnauthorized={handleUnauthorized}
           />
         )}
 
@@ -530,24 +567,14 @@ function ExpenseTrackerApp({
 }
 
 function App() {
-  const params = new URLSearchParams(
-    window.location.hash.slice(1),
-  );
+  const hash = window.location.hash.slice(1);
+  const [hashPath, hashQuery = ""] = hash.split("?");
 
+  const params = new URLSearchParams(hashQuery);
   const resetToken = params.get("token");
 
   const [isAuthenticated, setIsAuthenticated] =
     useState(() => Boolean(getAccessToken()));
-
-  useEffect(() => {
-    setUnauthorizedHandler(() => {
-      setIsAuthenticated(false);
-    });
-
-    return () => {
-      setUnauthorizedHandler(null);
-    };
-  }, []);
 
   const handleLogin = (accessToken: string) => {
     setAccessToken(accessToken);
@@ -569,9 +596,8 @@ function App() {
     handleLogout();
   };
 
-  if (
-    window.location.pathname ===
-      "/reset-password" &&
+   if (
+    hashPath === "/reset-password" &&
     resetToken
   ) {
     return (

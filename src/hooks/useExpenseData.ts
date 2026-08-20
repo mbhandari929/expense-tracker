@@ -13,7 +13,7 @@ import type {
   MonthlyBudgets,
 } from "../types/common";
 
-import { apiFetch } from "../utils/api";
+import type { ApiFetcher } from "../utils/api";
 import { isRecord } from "../utils/typeGuards";
 
 export type {
@@ -166,6 +166,7 @@ const isAbortError = (
 
 export const useExpenseData = (
   apiUrl: string,
+  apiFetch: ApiFetcher,
 ) => {
   const [
     openingBalance,
@@ -201,6 +202,9 @@ export const useExpenseData = (
     useState("");
 
   useEffect(() => {
+    // In React StrictMode development, the first mount cleanup
+    // intentionally aborts its in-flight requests before remount.
+    // Production is unaffected, and aborting prevents stale updates.
     const controller =
       new AbortController();
 
@@ -356,7 +360,7 @@ export const useExpenseData = (
     return () => {
       controller.abort();
     };
-  }, [apiUrl]);
+  }, [apiUrl, apiFetch]);
 
   const saveSettings = useCallback(
     async (
@@ -399,7 +403,7 @@ export const useExpenseData = (
         return false;
       }
     },
-    [apiUrl],
+    [apiUrl, apiFetch],
   );
 
   return {

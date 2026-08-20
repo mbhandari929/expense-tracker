@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { authFetch } from "../utils/api";
 import "./AuthForm.css";
 import AppModal from "./AppModal";
 
@@ -6,10 +7,6 @@ type ResetPasswordFormProps = {
   apiUrl: string;
   resetToken: string;
   onSuccess: () => void;
-};
-
-type ResetPasswordResponse = {
-  message?: string | string[];
 };
 
 export default function ResetPasswordForm({
@@ -38,30 +35,20 @@ export default function ResetPasswordForm({
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(
-        `${apiUrl}/auth/reset-password`,
+      const result = await authFetch(
+        apiUrl,
+        "/auth/reset-password",
         {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            resetToken,
-            newPassword,
-          }),
+          resetToken,
+          newPassword,
         },
+        "Password reset failed.",
       );
 
-      const data =
-        (await response.json()) as ResetPasswordResponse;
-
-      if (!response.ok) {
-        const message = Array.isArray(data.message)
-          ? data.message.join(" ")
-          : data.message;
-
+      if (!result.ok) {
         setError(
-          message || "Password reset failed.",
+          result.errorMessage ||
+            "Password reset failed.",
         );
         return;
       }

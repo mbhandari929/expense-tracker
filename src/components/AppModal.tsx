@@ -37,11 +37,21 @@ function AppModal({
     confirmButtonRef.current?.focus();
   }, []);
 
+  const closeModal = () => {
+    if (onCancel) {
+      onCancel();
+      return;
+    }
+
+    void onConfirm();
+  };
+
   const handleKeyDown = (
     event: KeyboardEvent<HTMLDivElement>,
   ) => {
     if (event.key === "Escape") {
-      onCancel?.();
+      event.preventDefault();
+      closeModal();
       return;
     }
 
@@ -85,11 +95,8 @@ function AppModal({
       className="app-modal-overlay"
       onKeyDown={handleKeyDown}
       onMouseDown={(event) => {
-        if (
-          event.target === event.currentTarget &&
-          onCancel
-        ) {
-          onCancel();
+        if (event.target === event.currentTarget) {
+          closeModal();
         }
       }}
     >
