@@ -1,42 +1,35 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
+import type { Dispatch, SetStateAction } from "react";
+import { formatCurrency } from "../utils/currency";
 
 type Expense = {
   amount: number;
   date: string;
 };
 
+type MonthlyBudgets = Record<string, number>;
+
 type MonthlyBudgetProps = {
   expenses: Expense[];
   selectedMonth: string;
+  monthlyBudgets: MonthlyBudgets;
+  setMonthlyBudgets: Dispatch<SetStateAction<MonthlyBudgets>>;
 };
-
-type MonthlyBudgets = Record<string, number>;
 
 function MonthlyBudget({
   expenses,
   selectedMonth,
+  monthlyBudgets,
+  setMonthlyBudgets,
 }: MonthlyBudgetProps) {
-  const currentMonth = new Date().toISOString().slice(0, 7);
+  const today = new Date();
+
+  const currentMonth = `${today.getFullYear()}-${String(
+    today.getMonth() + 1,
+  ).padStart(2, "0")}`;
 
   const activeMonth =
     selectedMonth === "all" ? currentMonth : selectedMonth;
-
-  const [monthlyBudgets, setMonthlyBudgets] =
-    useState<MonthlyBudgets>(() => {
-      try {
-        const saved = localStorage.getItem("monthlyBudgets");
-        return saved ? JSON.parse(saved) : {};
-      } catch {
-        return {};
-      }
-    });
-
-  useEffect(() => {
-    localStorage.setItem(
-      "monthlyBudgets",
-      JSON.stringify(monthlyBudgets)
-    );
-  }, [monthlyBudgets]);
 
   const monthlyExpense = useMemo(() => {
     return expenses
@@ -95,12 +88,12 @@ function MonthlyBudget({
       <div className="budget-details">
         <div>
           <small>Expense</small>
-          <strong>¥{monthlyExpense.toLocaleString()}</strong>
+          <strong>{formatCurrency(monthlyExpense)}</strong>
         </div>
 
         <div>
           <small>Limit</small>
-          <strong>¥{monthlyLimit.toLocaleString()}</strong>
+          <strong>{formatCurrency(monthlyLimit)}</strong>
         </div>
 
         <div>
@@ -109,8 +102,7 @@ function MonthlyBudget({
           </small>
 
           <strong>
-            
-            ¥{Math.abs(remainingBudget).toLocaleString()}
+            {formatCurrency(Math.abs(remainingBudget))}
           </strong>
         </div>
       </div>
@@ -120,16 +112,20 @@ function MonthlyBudget({
           <div className="budget-progress">
             <div
               className="budget-progress-bar"
-              style={{ width: `${usedPercentage}%` }}
+              style={{
+                width: `${usedPercentage}%`,
+              }}
             />
           </div>
 
           <p className="budget-message">
             {budgetExceeded
-              ? `⚠️ Budget exceeded by ¥${Math.abs(
-                  remainingBudget
-                ).toLocaleString()}`
-              : `${usedPercentage.toFixed(1)}% of the budget used`}
+              ? `⚠️ Budget exceeded by ${formatCurrency(
+                  Math.abs(remainingBudget),
+                )}`
+              : `${usedPercentage.toFixed(
+                  1,
+                )}% of the budget used`}
           </p>
         </>
       ) : (

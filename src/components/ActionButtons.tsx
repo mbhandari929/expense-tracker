@@ -1,17 +1,40 @@
+import type { ChangeEvent } from "react";
+
 type ActionButtonsProps = {
-  onEdit: () => void;
-  onDelete: () => void;
+  onExportCSV: () => void;
+  onBackupJSON: () => void;
+  onImportJSON: (
+    event: ChangeEvent<HTMLInputElement>,
+  ) => void;
 };
 
-function ActionButtons({ onEdit, onDelete }: ActionButtonsProps) {
+function ActionButtons({
+  onExportCSV,
+  onBackupJSON,
+  onImportJSON,
+}: ActionButtonsProps) {
   return (
-    <div className="action-buttons">
-      <button onClick={onEdit}>✏️</button>
-      <button onClick={onDelete}>×</button>
+    <div className="backup-buttons">
+      <button type="button" onClick={onExportCSV}>
+        CSV Export
+      </button>
+
+      <button type="button" onClick={onBackupJSON}>
+        JSON Backup
+      </button>
+
+      <label className="backup-import-button">
+        JSON Import
+
+        <input
+          type="file"
+          accept=".json"
+          onChange={onImportJSON}
+          hidden
+        />
+      </label>
     </div>
   );
 }
 
 export default ActionButtons;
-
-
