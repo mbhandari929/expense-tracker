@@ -1,9 +1,24 @@
-import { apiFetch } from "../utils/api";
-import { useCallback, useEffect, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
+
 import type {
   Item,
   TransactionType,
 } from "../types/transaction";
+
+import type {
+  MonthlyBudgets,
+} from "../types/common";
+
+import type { ApiFetcher } from "../utils/api";
+import { isRecord } from "../utils/typeGuards";
+
+export type {
+  MonthlyBudgets,
+} from "../types/common";
 
 const DEFAULT_INCOME_SOURCES = [
   "Salary",
@@ -18,11 +33,6 @@ const DEFAULT_EXPENSE_SOURCES = [
   "Other",
 ];
 
-const SETTINGS_STORAGE_KEY =
-  "expense-tracker-settings";
-
-export type MonthlyBudgets = Record<string, number>;
-
 export type SettingsPayload = {
   openingBalance: number;
   incomeSources: string[];
@@ -35,16 +45,6 @@ type SettingsData = {
   incomeSources?: unknown;
   expenseSources?: unknown;
   monthlyBudgets?: unknown;
-};
-
-const isRecord = (
-  value: unknown,
-): value is Record<string, unknown> => {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    !Array.isArray(value)
-  );
 };
 
 const normalizeApiTransactions = (
@@ -80,7 +80,7 @@ const normalizeApiTransactions = (
         id: String(id),
         text,
         amount,
-        date,
+        date: date.slice(0, 10),
         type,
       },
     ];
@@ -95,12 +95,21 @@ const normalizeSources = (
     return fallback;
   }
 
-  const sources = value.filter(
-    (source): source is string =>
-      typeof source === "string",
+  const sources = Array.from(
+    new Set(
+      value
+        .filter(
+          (source): source is string =>
+            typeof source === "string",
+        )
+        .map((source) => source.trim())
+        .filter(Boolean),
+    ),
   );
 
-  return sources.length > 0 ? sources : fallback;
+  return sources.length > 0
+    ? sources
+    : fallback;
 };
 
 const normalizeMonthlyBudgets = (
@@ -129,78 +138,59 @@ const normalizeMonthlyBudgets = (
 };
 
 const normalizeSettings = (
-  settingsData: SettingsData,
-): SettingsPayload => {
-  return {
-    openingBalance:
-      Number(settingsData.openingBalance) || 0,
+  settings: SettingsData,
+): SettingsPayload => ({
+  openingBalance:
+    Number(settings.openingBalance) || 0,
 
-    incomeSources: normalizeSources(
-      settingsData.incomeSources,
-      DEFAULT_INCOME_SOURCES,
-    ),
+  incomeSources: normalizeSources(
+    settings.incomeSources,
+    DEFAULT_INCOME_SOURCES,
+  ),
 
-    expenseSources: normalizeSources(
-      settingsData.expenseSources,
-      DEFAULT_EXPENSE_SOURCES,
-    ),
+  expenseSources: normalizeSources(
+    settings.expenseSources,
+    DEFAULT_EXPENSE_SOURCES,
+  ),
 
-    monthlyBudgets: normalizeMonthlyBudgets(
-      settingsData.monthlyBudgets,
-    ),
-  };
-};
+  monthlyBudgets: normalizeMonthlyBudgets(
+    settings.monthlyBudgets,
+  ),
+});
 
-const loadStoredSettings =
-  (): SettingsPayload | null => {
-    try {
-      const storedSettings = localStorage.getItem(
-        SETTINGS_STORAGE_KEY,
-      );
+const isAbortError = (
+  error: unknown,
+): boolean =>
+  error instanceof DOMException &&
+  error.name === "AbortError";
 
-      if (!storedSettings) {
-        return null;
-      }
-
-      const parsedSettings: unknown =
-        JSON.parse(storedSettings);
-
-      if (!isRecord(parsedSettings)) {
-        return null;
-      }
-
-      return normalizeSettings(parsedSettings);
-    } catch (error) {
-      console.error(
-        "Browser settings load failed:",
-        error,
-      );
-
-      return null;
-    }
-  };
-
-const storeSettings = (
-  settings: SettingsPayload,
+export const useExpenseData = (
+  apiUrl: string,
+  apiFetch: ApiFetcher,
 ) => {
-  localStorage.setItem(
-    SETTINGS_STORAGE_KEY,
-    JSON.stringify(settings),
+  const [
+    openingBalance,
+    setOpeningBalance,
+  ] = useState(0);
+
+  const [
+    incomeSources,
+    setIncomeSources,
+  ] = useState<string[]>(
+    DEFAULT_INCOME_SOURCES,
   );
-};
 
-export const useExpenseData = (apiUrl: string) => {
-  const [openingBalance, setOpeningBalance] =
-    useState(0);
+  const [
+    expenseSources,
+    setExpenseSources,
+  ] = useState<string[]>(
+    DEFAULT_EXPENSE_SOURCES,
+  );
 
-  const [incomeSources, setIncomeSources] =
-    useState<string[]>(DEFAULT_INCOME_SOURCES);
-
-  const [expenseSources, setExpenseSources] =
-    useState<string[]>(DEFAULT_EXPENSE_SOURCES);
-
-  const [monthlyBudgets, setMonthlyBudgets] =
-    useState<MonthlyBudgets>({});
+  const [
+    monthlyBudgets,
+    setMonthlyBudgets,
+  ] = useState<MonthlyBudgets>({});
 
   const [incomes, setIncomes] =
     useState<Item[]>([]);
@@ -208,16 +198,34 @@ export const useExpenseData = (apiUrl: string) => {
   const [expenses, setExpenses] =
     useState<Item[]>([]);
 
-  const [apiError, setApiError] = useState("");
+  const [apiError, setApiError] =
+    useState("");
 
   useEffect(() => {
+    // In React StrictMode development, the first mount cleanup
+    // intentionally aborts its in-flight requests before remount.
+    // Production is unaffected, and aborting prevents stale updates.
+    const controller =
+      new AbortController();
+
     const applySettings = (
       settings: SettingsPayload,
     ) => {
-      setOpeningBalance(settings.openingBalance);
-      setIncomeSources(settings.incomeSources);
-      setExpenseSources(settings.expenseSources);
-      setMonthlyBudgets(settings.monthlyBudgets);
+      setOpeningBalance(
+        settings.openingBalance,
+      );
+
+      setIncomeSources(
+        settings.incomeSources,
+      );
+
+      setExpenseSources(
+        settings.expenseSources,
+      );
+
+      setMonthlyBudgets(
+        settings.monthlyBudgets,
+      );
     };
 
     const loadData = async () => {
@@ -228,9 +236,27 @@ export const useExpenseData = (apiUrl: string) => {
           incomeResponse,
           expenseResponse,
         ] = await Promise.all([
-          apiFetch(`${apiUrl}/income`),
-          apiFetch(`${apiUrl}/expense`),
+          apiFetch(
+            `${apiUrl}/income`,
+            {
+              signal: controller.signal,
+            },
+          ),
+
+          apiFetch(
+            `${apiUrl}/expense`,
+            {
+              signal: controller.signal,
+            },
+          ),
         ]);
+
+        if (
+          incomeResponse.status === 401 ||
+          expenseResponse.status === 401
+        ) {
+          return;
+        }
 
         if (
           !incomeResponse.ok ||
@@ -247,6 +273,10 @@ export const useExpenseData = (apiUrl: string) => {
         const expenseData: unknown =
           await expenseResponse.json();
 
+        if (controller.signal.aborted) {
+          return;
+        }
+
         setIncomes(
           normalizeApiTransactions(
             incomeData,
@@ -261,6 +291,10 @@ export const useExpenseData = (apiUrl: string) => {
           ),
         );
       } catch (error) {
+        if (isAbortError(error)) {
+          return;
+        }
+
         console.error(
           "Transaction data load failed:",
           error,
@@ -271,17 +305,23 @@ export const useExpenseData = (apiUrl: string) => {
         );
       }
 
-      const storedSettings =
-        loadStoredSettings();
-
-      if (storedSettings) {
-        applySettings(storedSettings);
+      if (controller.signal.aborted) {
+        return;
       }
 
       try {
-        const settingsResponse = await apiFetch(
-          `${apiUrl}/settings`,
-        );
+        const settingsResponse =
+          await apiFetch(
+            `${apiUrl}/settings`,
+            {
+              signal:
+                controller.signal,
+            },
+          );
+
+        if (settingsResponse.status === 401) {
+          return;
+        }
 
         if (!settingsResponse.ok) {
           throw new Error(
@@ -292,56 +332,66 @@ export const useExpenseData = (apiUrl: string) => {
         const settingsData =
           (await settingsResponse.json()) as SettingsData;
 
-        const normalizedSettings =
-          normalizeSettings(settingsData);
+        if (controller.signal.aborted) {
+          return;
+        }
 
-        applySettings(normalizedSettings);
-        storeSettings(normalizedSettings);
+        const normalizedSettings =
+          normalizeSettings(
+            settingsData,
+          );
+
+        applySettings(
+          normalizedSettings,
+        );
       } catch (error) {
+        if (isAbortError(error)) {
+          return;
+        }
+
         console.error(
           "Settings data load failed:",
           error,
         );
 
         errorMessages.push(
-          "Settings API is unavailable. Browser settings are being used.",
+          "Settings data could not be loaded from the server.",
         );
       }
 
-      setApiError(errorMessages.join(" "));
+      if (!controller.signal.aborted) {
+        setApiError(
+          errorMessages.join(" "),
+        );
+      }
     };
 
     void loadData();
-  }, [apiUrl]);
+
+    return () => {
+      controller.abort();
+    };
+  }, [apiUrl, apiFetch]);
 
   const saveSettings = useCallback(
-    async (settings: SettingsPayload) => {
+    async (
+      settings: SettingsPayload,
+    ): Promise<boolean> => {
       try {
-        storeSettings(settings);
-      } catch (error) {
-        console.error(
-          "Browser settings save failed:",
-          error,
-        );
-
-        setApiError(
-          "Settings could not be saved in this browser.",
-        );
-
-        return false;
-      }
-
-      try {
-        const response = await apiFetch(
-          `${apiUrl}/settings`,
-          {
-            method: "PATCH",
-            headers: {
-              "Content-Type": "application/json",
+        const response =
+          await apiFetch(
+            `${apiUrl}/settings`,
+            {
+              method: "PATCH",
+              headers: {
+                "Content-Type":
+                  "application/json",
+              },
+              body: JSON.stringify(
+                settings,
+              ),
             },
-            body: JSON.stringify(settings),
-          },
-        );
+          );
 
         if (!response.ok) {
           throw new Error(
@@ -358,13 +408,13 @@ export const useExpenseData = (apiUrl: string) => {
         );
 
         setApiError(
-          "Settings were saved in this browser, but could not be synced with the server.",
+          "Settings could not be saved to the server.",
         );
 
-        return true;
+        return false;
       }
     },
-    [apiUrl],
+    [apiUrl, apiFetch],
   );
 
   return {

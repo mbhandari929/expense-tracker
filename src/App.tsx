@@ -1,293 +1,104 @@
-import { useState } from "react";
-import ActionButtons from "./components/ActionButtons";
-import MonthlyBudget from "./components/MonthlyBudget";
-import OpeningBalanceField from "./components/OpeningBalanceField";
-import SummaryCard from "./components/SummaryCard";
-import TransactionChart from "./components/TransactionChart";
-import TransactionForm from "./components/TransactionForm";
-import TransactionStatement from "./components/TransactionStatement";
-import { useBackup } from "./hooks/useBackup";
-import { useExpenseData } from "./hooks/useExpenseData";
-import { useTransactionForm } from "./hooks/useTransactionForm";
-import { useTransactionSummary } from "./hooks/useTransactionSummary";
+import {
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
+
+import ExpenseTrackerPage from "./pages/ExpenseTrackerPage";
+import LoginPage from "./pages/LoginPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
+import {
+  getAccessToken,
+  removeAccessToken,
+  setAccessToken,
+} from "./utils/api";
+
 import "./App.css";
 
 const API_URL = import.meta.env.VITE_API_URL || "/api";
 
-const getCurrentMonth = () => {
-  const today = new Date();
-
-  return `${today.getFullYear()}-${String(
-    today.getMonth() + 1,
-  ).padStart(2, "0")}`;
-};
+const getCurrentHash = () =>
+  window.location.hash.slice(1);
 
 function App() {
-  const {
-    openingBalance,
-    setOpeningBalance,
-    incomeSources,
-    setIncomeSources,
-    expenseSources,
-    setExpenseSources,
-    incomes,
-    setIncomes,
-    expenses,
-    setExpenses,
-    monthlyBudgets,
-    setMonthlyBudgets,
-    apiError,
-    saveSettings,
-  } = useExpenseData(API_URL);
+  const [hash, setHash] = useState(getCurrentHash);
 
-  const {
-    transactionType,
-    transactionText,
-    transactionAmount,
-    transactionDate,
-    newSource,
-    editId,
-    sourceOptions,
-    setTransactionText,
-    setTransactionAmount,
-    setTransactionDate,
-    setNewSource,
-    changeTransactionType,
-    resetForm,
-    addSource,
-    saveTransaction,
-    updateTransactionInline,
-    deleteTransaction,
-  } = useTransactionForm({
-    apiUrl: API_URL,
-    incomes,
-    expenses,
-    incomeSources,
-    expenseSources,
-    setIncomes,
-    setExpenses,
-    setIncomeSources,
-    setExpenseSources,
-  });
+  useEffect(() => {
+    const handleHashChange = () => {
+      setHash(getCurrentHash());
+    };
 
-  const { exportCSV, exportJSON, importJSON } = useBackup({
-    apiUrl: API_URL,
-    incomes,
-    expenses,
-    incomeSources,
-    expenseSources,
-    openingBalance,
-    monthlyBudgets,
-    setMonthlyBudgets,
-    setIncomes,
-    setExpenses,
-    setIncomeSources,
-    setExpenseSources,
-    setOpeningBalance,
-  });
+    window.addEventListener(
+      "hashchange",
+      handleHashChange,
+    );
 
-  const [searchInput, setSearchInput] = useState("");
-  const [appliedSearchText, setAppliedSearchText] =
-    useState("");
+    return () => {
+      window.removeEventListener(
+        "hashchange",
+        handleHashChange,
+      );
+    };
+  }, []);
 
-  const [selectedMonth, setSelectedMonth] =
-    useState(getCurrentMonth);
+  const [hashPath, hashQuery = ""] = hash.split("?");
+  const resetToken = new URLSearchParams(
+    hashQuery,
+  ).get("token");
 
-  const [darkMode, setDarkMode] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] =
+    useState(() => Boolean(getAccessToken()));
 
-  const {
-    months,
-    selectedOpeningBalance,
-    totalIncome,
-    totalExpense,
-    balance,
-    filteredTransactions,
-    chartData,
-    monthlyReport,
-  } = useTransactionSummary({
-    incomes,
-    expenses,
-    incomeSources,
-    expenseSources,
-    openingBalance,
-    selectedMonth,
-    searchText: appliedSearchText,
-  });
+  const handleLogin = useCallback(
+    (accessToken: string) => {
+      setAccessToken(accessToken);
+      setIsAuthenticated(true);
+    },
+    [],
+  );
 
-  const handleSearch = () => {
-    setAppliedSearchText(searchInput.trim());
-  };
+  const handleLogout = useCallback(() => {
+    removeAccessToken();
+    setIsAuthenticated(false);
+  }, []);
 
-  const handleClearSearch = () => {
-    setSearchInput("");
-    setAppliedSearchText("");
-  };
+  const handleResetSuccess = useCallback(() => {
+    window.history.replaceState(
+      {},
+      "",
+      `${window.location.pathname}${window.location.search}`,
+    );
+    setHash("");
+    handleLogout();
+  }, [handleLogout]);
 
-  const handleSaveSettings = async () => {
-    const saved = await saveSettings({
-      openingBalance,
-      incomeSources,
-      expenseSources,
-      monthlyBudgets,
-    });
+  if (
+    hashPath === "/reset-password" &&
+    resetToken
+  ) {
+    return (
+      <ResetPasswordPage
+        apiUrl={API_URL}
+        resetToken={resetToken}
+        onSuccess={handleResetSuccess}
+      />
+    );
+  }
 
-    if (saved) {
-      alert("Settings saved successfully.");
-    } else {
-      alert("Settings could not be saved.");
-    }
-  };
+  if (!isAuthenticated) {
+    return (
+      <LoginPage
+        apiUrl={API_URL}
+        onLogin={handleLogin}
+      />
+    );
+  }
 
   return (
-    <div className={darkMode ? "app dark" : "app"}>
-      <div className="header">
-        <h1>💰 Expense Tracker App</h1>
-
-        <button
-          type="button"
-          onClick={() =>
-            setDarkMode((currentMode) => !currentMode)
-          }
-        >
-          {darkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}
-        </button>
-      </div>
-
-      {apiError && (
-        <p className="api-error">{apiError}</p>
-      )}
-
-      <div className="top-controls">
-        <OpeningBalanceField
-          value={openingBalance}
-          onChange={setOpeningBalance}
-        />
-
-        <select
-          value={selectedMonth}
-          onChange={(event) =>
-            setSelectedMonth(event.target.value)
-          }
-        >
-          <option value="all">All Months</option>
-
-          {months.map((month) => (
-            <option key={month} value={month}>
-              {month}
-            </option>
-          ))}
-        </select>
-
-        <div className="search-controls">
-          <input
-            type="text"
-            placeholder={`Search ${
-              selectedMonth === "all"
-                ? "all"
-                : selectedMonth
-            } transactions by source...`}
-            value={searchInput}
-            onChange={(event) =>
-              setSearchInput(event.target.value)
-            }
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                handleSearch();
-              }
-            }}
-          />
-
-          <div className="search-buttons">
-            <button
-              type="button"
-              onClick={handleSearch}
-            >
-              Search
-            </button>
-
-            <button
-              type="button"
-              onClick={handleClearSearch}
-            >
-              Clear
-            </button>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          className="save-settings-button"
-          onClick={handleSaveSettings}
-        >
-          Save Settings
-        </button>
-      </div>
-
-      <div className="summary-area">
-        <SummaryCard
-          title="Carried Opening Balance"
-          amount={selectedOpeningBalance}
-        />
-
-        <SummaryCard
-          title="Total Income"
-          amount={totalIncome}
-          className="income"
-        />
-
-        <SummaryCard
-          title="Total Expense"
-          amount={totalExpense}
-          className="expense"
-        />
-
-        <SummaryCard
-          title="Closing Balance"
-          amount={balance}
-          className="balance"
-        />
-      </div>
-
-      <MonthlyBudget
-        expenses={expenses}
-        selectedMonth={selectedMonth}
-        monthlyBudgets={monthlyBudgets}
-        setMonthlyBudgets={setMonthlyBudgets}
-      />
-
-      <ActionButtons
-        onExportCSV={exportCSV}
-        onBackupJSON={exportJSON}
-        onImportJSON={importJSON}
-      />
-
-      <TransactionForm
-        type={transactionType}
-        date={transactionDate}
-        source={transactionText}
-        amount={transactionAmount}
-        newSource={newSource}
-        sourceOptions={sourceOptions}
-        isEditing={editId !== null}
-        onTypeChange={changeTransactionType}
-        onDateChange={setTransactionDate}
-        onSourceChange={setTransactionText}
-        onAmountChange={setTransactionAmount}
-        onNewSourceChange={setNewSource}
-        onAddSource={addSource}
-        onSubmit={saveTransaction}
-        onCancel={resetForm}
-      />
-
-      <TransactionStatement
-        items={filteredTransactions}
-        report={monthlyReport}
-        onSave={updateTransactionInline}
-        onDelete={deleteTransaction}
-      />
-
-      <TransactionChart data={chartData} />
-    </div>
+    <ExpenseTrackerPage
+      apiUrl={API_URL}
+      onLogout={handleLogout}
+    />
   );
 }
 

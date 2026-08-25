@@ -1,21 +1,14 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import StatementActionButtons from "./StatementActionButtons";
+import type { Item } from "../types/transaction";
 import { formatCurrency } from "../utils/currency";
-
-export type TransactionItem = {
-  id: string;
-  text: string;
-  amount: number;
-  date: string;
-  type: "income" | "expense";
-};
-
+import { getTodayLocalDate } from "../utils/date";
 type StatementRowProps = {
-  item: TransactionItem;
+  item: Item;
   onSave: (
-    item: TransactionItem,
+    item: Item,
   ) => Promise<boolean>;
-  onDelete: (item: TransactionItem) => void;
+  onDelete: (item: Item) => void;
 };
 
 function StatementRow({
@@ -23,24 +16,25 @@ function StatementRow({
   onSave,
   onDelete,
 }: StatementRowProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editDate, setEditDate] = useState(
-    item.date.slice(0, 10),
-  );
-  const [editText, setEditText] = useState(item.text);
-  const [editAmount, setEditAmount] = useState(
-    String(item.amount),
-  );
-  const [editError, setEditError] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
+  const [isEditing, setIsEditing] =
+    useState(false);
 
-  const today = new Date().toISOString().slice(0, 10);
+  const [editDate, setEditDate] =
+    useState(item.date.slice(0, 10));
 
-  useEffect(() => {
-    setEditDate(item.date.slice(0, 10));
-    setEditText(item.text);
-    setEditAmount(String(item.amount));
-  }, [item]);
+  const [editText, setEditText] =
+    useState(item.text);
+
+  const [editAmount, setEditAmount] =
+    useState(String(item.amount));
+
+  const [editError, setEditError] =
+    useState("");
+
+  const [isSaving, setIsSaving] =
+    useState(false);
+
+  const today = getTodayLocalDate();
 
   const startEditing = () => {
     setEditDate(item.date.slice(0, 10));
@@ -63,22 +57,33 @@ function StatementRow({
     const amount = Number(editAmount);
 
     if (editDate === "") {
-      setEditError("Please select a date.");
+      setEditError(
+        "Please select a date.",
+      );
       return;
     }
 
     if (editDate > today) {
-      setEditError("Future dates are not allowed.");
+      setEditError(
+        "Future dates are not allowed.",
+      );
       return;
     }
 
     if (text === "") {
-      setEditError("Source is required.");
+      setEditError(
+        "Source is required.",
+      );
       return;
     }
 
-    if (!Number.isFinite(amount) || amount <= 0) {
-      setEditError("Amount must be greater than 0.");
+    if (
+      !Number.isFinite(amount) ||
+      amount <= 0
+    ) {
+      setEditError(
+        "Amount must be greater than 0.",
+      );
       return;
     }
 
@@ -96,9 +101,12 @@ function StatementRow({
 
     if (saved) {
       setIsEditing(false);
-    } else {
-      setEditError("Transaction could not be updated.");
+      return;
     }
+
+    setEditError(
+      "Transaction could not be updated.",
+    );
   };
 
   if (isEditing) {
@@ -115,11 +123,15 @@ function StatementRow({
           value={editDate}
           max={today}
           onChange={(event) =>
-            setEditDate(event.target.value)
+            setEditDate(
+              event.target.value,
+            )
           }
         />
 
-        <span className={`type-badge ${item.type}`}>
+        <span
+          className={`type-badge ${item.type}`}
+        >
           {item.type === "income"
             ? "Income"
             : "Expense"}
@@ -129,7 +141,9 @@ function StatementRow({
           type="text"
           value={editText}
           onChange={(event) =>
-            setEditText(event.target.value)
+            setEditText(
+              event.target.value,
+            )
           }
           placeholder="Source"
         />
@@ -140,7 +154,9 @@ function StatementRow({
           step="any"
           value={editAmount}
           onChange={(event) =>
-            setEditAmount(event.target.value)
+            setEditAmount(
+              event.target.value,
+            )
           }
           onWheel={(event) =>
             event.currentTarget.blur()
@@ -151,10 +167,14 @@ function StatementRow({
         <div className="inline-edit-actions">
           <button
             type="button"
-            onClick={() => void saveEditing()}
+            onClick={() =>
+              void saveEditing()
+            }
             disabled={isSaving}
           >
-            {isSaving ? "Saving..." : "Save"}
+            {isSaving
+              ? "Saving..."
+              : "Save"}
           </button>
 
           <button
@@ -167,7 +187,10 @@ function StatementRow({
         </div>
 
         {editError && (
-          <p className="form-error" role="alert">
+          <p
+            className="form-error"
+            role="alert"
+          >
             {editError}
           </p>
         )}
@@ -183,9 +206,13 @@ function StatementRow({
           : "expense-statement"
       }`}
     >
-      <span>{item.date.slice(0, 10)}</span>
+      <span>
+        {item.date.slice(0, 10)}
+      </span>
 
-      <span className={`type-badge ${item.type}`}>
+      <span
+        className={`type-badge ${item.type}`}
+      >
         {item.type === "income"
           ? "Income"
           : "Expense"}
@@ -200,13 +227,17 @@ function StatementRow({
             : "expense-amount"
         }
       >
-        {item.type === "income" ? "+" : "-"}
+        {item.type === "income"
+          ? "+"
+          : "-"}
         {formatCurrency(item.amount)}
       </span>
 
       <StatementActionButtons
         onEdit={startEditing}
-        onDelete={() => onDelete(item)}
+        onDelete={() =>
+          onDelete(item)
+        }
       />
     </div>
   );

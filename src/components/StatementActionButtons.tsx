@@ -8,7 +8,7 @@ function StatementActionButtons({
   onDelete,
 }: StatementActionButtonsProps) {
   return (
-    <div className="statement-actions">
+    <div className="action-buttons">
       <button type="button" onClick={onEdit}>
         ✏️
       </button>

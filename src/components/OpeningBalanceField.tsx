@@ -1,15 +1,19 @@
 type OpeningBalanceFieldProps = {
   value: number;
   onChange: (value: number) => void;
+  onBlur?: () => void;
 };
 
 function OpeningBalanceField({
   value,
   onChange,
+  onBlur,
 }: OpeningBalanceFieldProps) {
   return (
     <div className="opening-balance-field">
-     <label htmlFor="opening-balance">Base Opening Balance</label> 
+      <label htmlFor="opening-balance">
+        Base Opening Balance
+      </label>
 
       <div className="opening-balance-input">
         <span>¥</span>
@@ -19,8 +23,11 @@ function OpeningBalanceField({
           type="number"
           min="0"
           value={value || ""}
-          onChange={(event) => onChange(Number(event.target.value))}
           placeholder="Enter amount"
+          onChange={(event) =>
+            onChange(Number(event.target.value))
+          }
+          onBlur={onBlur}
         />
       </div>
     </div>

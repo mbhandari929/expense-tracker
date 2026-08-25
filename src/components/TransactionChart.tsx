@@ -16,18 +16,35 @@ type TransactionChartProps = {
   data: ChartItem[];
 };
 
-const COLORS = ["#00C49F", "#0088FE", "#FFBB28", "#FF8042", "#FF4560"];
+const COLORS = [
+  "#00C49F",
+  "#0088FE",
+  "#FFBB28",
+  "#FF8042",
+  "#FF4560",
+];
 
-function TransactionChart({ data }: TransactionChartProps) {
+function TransactionChart({
+  data,
+}: TransactionChartProps) {
+  const chartKey = data
+    .map((item) => `${item.name}:${item.total}`)
+    .join("|");
+
   return (
     <div className="chart-area single-chart-area">
       <div className="chart-box">
-        <h2>Income & Expense Pie Chart</h2>
+     <h2>All-time Income & Expense Pie Chart</h2>
 
         {data.length === 0 ? (
           <p>No chart data yet.</p>
         ) : (
-          <ResponsiveContainer width="100%" height={350}>
+          <ResponsiveContainer
+            key={chartKey}
+            width="100%"
+            height={350}
+            minWidth={0}
+          >
             <PieChart>
               <Pie
                 data={data}
@@ -36,10 +53,14 @@ function TransactionChart({ data }: TransactionChartProps) {
                 outerRadius={110}
                 label
               >
-                {data.map((_, index) => (
+                {data.map((item, index) => (
                   <Cell
-                    key={index}
-                    fill={COLORS[index % COLORS.length]}
+                    key={item.name}
+                    fill={
+                      COLORS[
+                        index % COLORS.length
+                      ]
+                    }
                   />
                 ))}
               </Pie>

@@ -1,6 +1,6 @@
 import MonthlyReport from "./MonthlyReport";
 import StatementRow from "./StatementRow";
-import type { TransactionItem } from "./StatementRow";
+import type { Item } from "../types/transaction";
 
 type MonthlyReportData = {
   income: number;
@@ -8,12 +8,15 @@ type MonthlyReportData = {
 };
 
 type TransactionStatementProps = {
-  items: TransactionItem[];
-  report: Record<string, MonthlyReportData>;
+  items: Item[];
+  report: Record<
+    string,
+    MonthlyReportData
+  >;
   onSave: (
-    item: TransactionItem,
+    item: Item,
   ) => Promise<boolean>;
-  onDelete: (item: TransactionItem) => void;
+  onDelete: (item: Item) => void;
 };
 
 function TransactionStatement({
@@ -25,7 +28,9 @@ function TransactionStatement({
   return (
     <div className="history-area single-history-area">
       <div className="history-box">
-        <h2>Income & Expense Statement</h2>
+        <h2>
+          Income & Expense Statement
+        </h2>
 
         <MonthlyReport report={report} />
 

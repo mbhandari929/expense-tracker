@@ -1,10 +1,16 @@
-import { apiFetch } from "../utils/api";
 import type {
   ChangeEvent,
   Dispatch,
   SetStateAction,
 } from "react";
+import type {
+  DialogMessage,
+  MonthlyBudgets,
+} from "../types/common";
 import type { Item } from "../types/transaction";
+import type { ApiFetcher } from "../utils/api";
+import { isRecord } from "../utils/typeGuards";
+
 
 type BackupTransaction = {
   text: string;
@@ -12,68 +18,16 @@ type BackupTransaction = {
   date: string;
 };
 
-const isRecord = (
-  value: unknown,
-): value is Record<string, unknown> => {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    !Array.isArray(value)
-  );
-};
-
-const normalizeBackupTransactions = (
-  value: unknown,
-): BackupTransaction[] => {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  return value.flatMap((item) => {
-    if (!isRecord(item)) {
-      return [];
-    }
-
-    const text =
-      typeof item.text === "string"
-        ? item.text.trim()
-        : "";
-
-    const amount = Number(item.amount);
-
-    const date =
-      typeof item.date === "string"
-        ? item.date.slice(0, 10)
-        : "";
-
-    if (
-      text === "" ||
-      !Number.isFinite(amount) ||
-      amount <= 0 ||
-      date === ""
-    ) {
-      return [];
-    }
-
-    return [
-      {
-        text,
-        amount,
-        date,
-      },
-    ];
-  });
-};
-type MonthlyBudgets = Record<string, number>;
-
 type UseBackupProps = {
   apiUrl: string;
+  apiFetch: ApiFetcher;
   incomes: Item[];
   expenses: Item[];
   incomeSources: string[];
   expenseSources: string[];
   openingBalance: number;
   monthlyBudgets: MonthlyBudgets;
+
   setMonthlyBudgets: Dispatch<
     SetStateAction<MonthlyBudgets>
   >;
@@ -88,6 +42,13 @@ type UseBackupProps = {
   setOpeningBalance: Dispatch<
     SetStateAction<number>
   >;
+
+  confirmAction: (
+    title: string,
+    message: string,
+  ) => Promise<boolean>;
+
+  showMessage: (message: DialogMessage) => void;
 };
 
 type RestoredTransaction = {
@@ -109,8 +70,115 @@ type RestoreResponse = {
   };
 };
 
+const normalizeDate = (
+  value: unknown,
+): string => {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  const date = value.slice(0, 10);
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return "";
+  }
+
+  const [year, month, day] = date
+    .split("-")
+    .map(Number);
+
+  const parsedDate = new Date(
+    Date.UTC(year, month - 1, day),
+  );
+
+  if (
+    parsedDate.getUTCFullYear() !== year ||
+    parsedDate.getUTCMonth() !== month - 1 ||
+    parsedDate.getUTCDate() !== day
+  ) {
+    return "";
+  }
+
+  return date;
+};
+
+const normalizeSources = (
+  value: unknown,
+): string[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return Array.from(
+    new Set(
+      value
+        .filter(
+          (source): source is string =>
+            typeof source === "string",
+        )
+        .map((source) => source.trim())
+        .filter(Boolean),
+    ),
+  );
+};
+
+const mergeSources = (
+  existingSources: string[],
+  transactions: BackupTransaction[],
+): string[] => {
+  const transactionSources =
+    transactions.map((item) => item.text);
+
+  return Array.from(
+    new Set([
+      ...existingSources,
+      ...transactionSources,
+    ]),
+  );
+};
+
+const normalizeBackupTransactions = (
+  value: unknown,
+): BackupTransaction[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((item) => {
+    if (!isRecord(item)) {
+      return [];
+    }
+
+    const text =
+      typeof item.text === "string"
+        ? item.text.trim()
+        : "";
+
+    const amount = Number(item.amount);
+    const date = normalizeDate(item.date);
+
+    if (
+      !text ||
+      !Number.isFinite(amount) ||
+      amount <= 0 ||
+      !date
+    ) {
+      return [];
+    }
+
+    return [
+      {
+        text,
+        amount,
+        date,
+      },
+    ];
+  });
+};
+
 export const useBackup = ({
   apiUrl,
+  apiFetch,
   incomes,
   expenses,
   incomeSources,
@@ -123,6 +191,8 @@ export const useBackup = ({
   setIncomeSources,
   setExpenseSources,
   setOpeningBalance,
+  confirmAction,
+  showMessage,
 }: UseBackupProps) => {
   const allItems = [...incomes, ...expenses];
 
@@ -176,7 +246,8 @@ export const useBackup = ({
     const link = document.createElement("a");
 
     link.href = url;
-    link.download = "expense-tracker-backup.json";
+    link.download =
+      "expense-tracker-backup.json";
     link.click();
 
     URL.revokeObjectURL(url);
@@ -187,8 +258,11 @@ export const useBackup = ({
   ) => {
     const file = event.target.files?.[0];
 
-    if (!file) return;
-   const reader = new FileReader();
+    if (!file) {
+      return;
+    }
+
+    const reader = new FileReader();
 
     reader.onload = async () => {
       try {
@@ -196,134 +270,186 @@ export const useBackup = ({
           String(reader.result),
         );
 
-        if (
-          typeof data !== "object" ||
-          data === null ||
-          Array.isArray(data)
-        ) {
-          throw new Error("Invalid backup data");
+        if (!isRecord(data)) {
+          throw new Error(
+            "Invalid backup data",
+          );
         }
 
-        const backup = data as Record<string, unknown>;
+        const normalizedIncomes =
+          normalizeBackupTransactions(
+            data.incomes,
+          );
 
-        const importedIncomes = Array.isArray(
-          backup.incomes,
-        )
-          ? backup.incomes
-          : [];
+        const normalizedExpenses =
+          normalizeBackupTransactions(
+            data.expenses,
+          );
 
-        const importedExpenses = Array.isArray(
-          backup.expenses,
-        )
-          ? backup.expenses
-          : [];
+        const restoredIncomeSources =
+          normalizeSources(
+            data.incomeSources,
+          );
 
- const normalizedIncomes =
-  normalizeBackupTransactions(importedIncomes);
+        const restoredExpenseSources =
+          normalizeSources(
+            data.expenseSources,
+          );
 
-  const normalizedExpenses =
-  normalizeBackupTransactions(importedExpenses);
-        const restoredIncomeSources = Array.isArray(
-          backup.incomeSources,
-        )
-          ? backup.incomeSources.filter(
-              (source): source is string =>
-                typeof source === "string",
-            )
-          : [];
+        const mergedIncomeSources =
+          mergeSources(
+            restoredIncomeSources,
+            normalizedIncomes,
+          );
 
-        const restoredExpenseSources = Array.isArray(
-          backup.expenseSources,
-        )
-          ? backup.expenseSources.filter(
-              (source): source is string =>
-                typeof source === "string",
-            )
-          : [];
+        const mergedExpenseSources =
+          mergeSources(
+            restoredExpenseSources,
+            normalizedExpenses,
+          );
 
         const restoredMonthlyBudgets =
-          typeof backup.monthlyBudgets === "object" &&
-          backup.monthlyBudgets !== null &&
-          !Array.isArray(backup.monthlyBudgets)
-            ? (backup.monthlyBudgets as MonthlyBudgets)
+          isRecord(data.monthlyBudgets)
+            ? (data.monthlyBudgets as MonthlyBudgets)
             : {};
-        const shouldReplace = window.confirm(
-         "Importing this backup will replace all existing transactions and settings. Do you want to continue?",
-       );
-         if (!shouldReplace) {
-        return;
-       }
+
+        const rawOpeningBalance = Number(
+          data.openingBalance,
+        );
+
+        const restoredOpeningBalance =
+          Number.isFinite(rawOpeningBalance)
+            ? rawOpeningBalance
+            : 0;
+
+        const shouldReplace =
+          await confirmAction(
+            "Restore Backup",
+            "This will replace all existing transactions and settings with the selected backup. This action cannot be undone.",
+          );
+
+        if (!shouldReplace) {
+          return;
+        }
+
         const response = await apiFetch(
           `${apiUrl}/backup/restore`,
           {
             method: "PUT",
             headers: {
-              "Content-Type": "application/json",
+              "Content-Type":
+                "application/json",
             },
             body: JSON.stringify({
-              incomes: normalizedIncomes,
-              expenses: normalizedExpenses,
+              incomes:
+                normalizedIncomes,
+              expenses:
+                normalizedExpenses,
               openingBalance:
-                Number(backup.openingBalance) || 0,
-              incomeSources: restoredIncomeSources,
-              expenseSources: restoredExpenseSources,
-              monthlyBudgets: restoredMonthlyBudgets,
+                restoredOpeningBalance,
+              incomeSources:
+                mergedIncomeSources,
+              expenseSources:
+                mergedExpenseSources,
+              monthlyBudgets:
+                restoredMonthlyBudgets,
             }),
           },
         );
 
         if (!response.ok) {
-          throw new Error("Backup restore failed");
+          throw new Error(
+            `Backup restore failed: ${response.status}`,
+          );
         }
 
         const restoredData =
           (await response.json()) as RestoreResponse;
 
-        setIncomes(
-          restoredData.incomes.map((item) => ({
-            id: String(item.id),
-            text: item.text,
-            amount: Number(item.amount),
-            date: item.date,
-            type: "income",
-          })),
-        );
+        const restoredIncomes: Item[] =
+          restoredData.incomes.map(
+            (item) => ({
+              id: String(item.id),
+              text: item.text.trim(),
+              amount: Number(item.amount),
+              date:
+                normalizeDate(item.date),
+              type: "income",
+            }),
+          );
 
-        setExpenses(
-          restoredData.expenses.map((item) => ({
-            id: String(item.id),
-            text: item.text,
-            amount: Number(item.amount),
-            date: item.date,
-            type: "expense",
-          })),
-        );
+        const restoredExpenses: Item[] =
+          restoredData.expenses.map(
+            (item) => ({
+              id: String(item.id),
+              text: item.text.trim(),
+              amount: Number(item.amount),
+              date:
+                normalizeDate(item.date),
+              type: "expense",
+            }),
+          );
+
+        const finalIncomeSources =
+          mergeSources(
+            normalizeSources(
+              restoredData.settings
+                .incomeSources,
+            ),
+            restoredIncomes,
+          );
+
+        const finalExpenseSources =
+          mergeSources(
+            normalizeSources(
+              restoredData.settings
+                .expenseSources,
+            ),
+            restoredExpenses,
+          );
+
+        setIncomes(restoredIncomes);
+        setExpenses(restoredExpenses);
 
         setOpeningBalance(
           Number(
-            restoredData.settings.openingBalance,
+            restoredData.settings
+              .openingBalance,
           ) || 0,
         );
 
         setIncomeSources(
-          restoredData.settings.incomeSources,
+          finalIncomeSources,
         );
 
         setExpenseSources(
-          restoredData.settings.expenseSources,
+          finalExpenseSources,
         );
 
         setMonthlyBudgets(
-          restoredData.settings.monthlyBudgets || {},
+          restoredData.settings
+            .monthlyBudgets || {},
         );
 
-        alert("Backup restored successfully!");
+        showMessage({
+          title: "Backup Restored",
+          message:
+            "Your backup was restored successfully.",
+          type: "success",
+        });
       } catch (error) {
-        console.error("Backup import failed:", error);
-
-        alert(
-          "Backup import failed. Please reload and check your data.",
+        console.error(
+          "Backup import failed:",
+          error,
         );
+
+        showMessage({
+          title:
+            "Backup Restore Failed",
+          message:
+            "The backup could not be restored. Please check the selected file and try again.",
+          type: "error",
+        });
       }
     };
 
