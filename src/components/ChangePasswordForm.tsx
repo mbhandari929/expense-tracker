@@ -150,10 +150,12 @@ function ChangePasswordForm({
         result.data.message,
       );
 
+      const normalizedMessage =
+        message?.trim().toLowerCase() || "";
+
       const isCurrentPasswordError =
         result.status === 401 &&
-        message ===
-          "Current password is incorrect";
+        normalizedMessage.includes("current password");
 
       if (
         result.status === 401 &&

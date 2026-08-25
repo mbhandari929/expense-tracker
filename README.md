@@ -90,6 +90,7 @@ The backend currently issues access tokens with a lifetime of 1 hour.
 When a protected API request returns `401 Unauthorized`, the React-owned authenticated request handler ends the session and returns the application to the login screen without reloading the page.
 
 The change-password form handles its own `401` response so that an incorrect current password is shown as a form error, while an expired or invalid session ends the authenticated session.
+
 ### Logout
 
 Logout removes the JWT access token from `sessionStorage` and returns the frontend to the login screen.
@@ -104,6 +105,10 @@ Password reset links use a hash-based client-side route:
 
 ```text
 /#/reset-password?token=RESET_TOKEN
+```
+
+The forgot-password screen shows the same generic confirmation for successful requests and ordinary client-error responses so that it does not reveal whether an email address is registered. Rate-limit and server failures use non-account-specific messages.
+
 ## Transaction Chart
 
 The transaction chart currently shows all-time transaction totals.

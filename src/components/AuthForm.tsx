@@ -1,8 +1,5 @@
 import { useState, type FormEvent } from "react";
-import {
-  authFetch,
-  getAuthMessage,
-} from "../utils/api";
+import { authFetch } from "../utils/api";
 import "./AuthForm.css";
 
 type AuthMode = "login" | "register" | "forgot";
@@ -98,17 +95,26 @@ function AuthForm({ apiUrl, onLogin }: AuthFormProps) {
         "Password reset request failed.",
       );
 
-      if (!result.ok) {
+      const genericMessage =
+        "If an account exists, a reset link has been sent.";
+
+      if (result.status === 429) {
         setError(
-          result.errorMessage ||
-            "Password reset request failed.",
+          "Too many password reset requests. Please try again later.",
         );
         return;
       }
 
-      setMessage(
-        getAuthMessage(result.data.message) ||
-          "If an account exists, a reset link has been sent.",
+      const isOrdinaryClientError =
+        result.status >= 400 && result.status < 500;
+
+      if (result.ok || isOrdinaryClientError) {
+        setMessage(genericMessage);
+        return;
+      }
+
+      setError(
+        "Password reset service is temporarily unavailable. Please try again later.",
       );
     } catch (error) {
       console.error("Password reset request failed:", error);

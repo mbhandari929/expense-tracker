@@ -1,5 +1,6 @@
 import {
   useCallback,
+  useEffect,
   useRef,
   useState,
 } from "react";
@@ -567,7 +568,28 @@ function ExpenseTrackerApp({
 }
 
 function App() {
-  const hash = window.location.hash.slice(1);
+  const [hash, setHash] = useState(() =>
+    window.location.hash.slice(1),
+  );
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      setHash(window.location.hash.slice(1));
+    };
+
+    window.addEventListener(
+      "hashchange",
+      handleHashChange,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "hashchange",
+        handleHashChange,
+      );
+    };
+  }, []);
+
   const [hashPath, hashQuery = ""] = hash.split("?");
 
   const params = new URLSearchParams(hashQuery);
@@ -590,9 +612,9 @@ function App() {
     window.history.replaceState(
       {},
       "",
-      "/",
+      `${window.location.pathname}${window.location.search}`,
     );
-
+    setHash("");
     handleLogout();
   };
 

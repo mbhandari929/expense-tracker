@@ -252,6 +252,13 @@ export const useExpenseData = (
         ]);
 
         if (
+          incomeResponse.status === 401 ||
+          expenseResponse.status === 401
+        ) {
+          return;
+        }
+
+        if (
           !incomeResponse.ok ||
           !expenseResponse.ok
         ) {
@@ -311,6 +318,10 @@ export const useExpenseData = (
                 controller.signal,
             },
           );
+
+        if (settingsResponse.status === 401) {
+          return;
+        }
 
         if (!settingsResponse.ok) {
           throw new Error(
